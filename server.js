@@ -58,12 +58,14 @@ function loadDatabase() {
         name: 'Лев',
         age: 8,
         weight: 26,
+        allergies: 'Нет',
+        doctorPhone: '+7 (999) 000-00-00',
         episode: 'Кашель, 4-й день',
         points48h: [
             { id: 'p1', temp: 38.4, drink: '150 мл', med: 'Ибупрофен 10 мл', note: 'Вечерний подъём температуры, сухой кашель', hours_ago: 40, timestamp: '40 ч назад' },
             { id: 'p2', temp: 37.8, drink: '200 мл', med: null, note: 'Спал спокойно после жаропонижающего', hours_ago: 30, timestamp: '30 ч назад' },
             { id: 'p3', temp: 38.6, drink: '100 мл', med: null, note: 'Приступы кашля днём, слабость', hours_ago: 21, timestamp: '21 ч назад' },
-            { id: 'p4', temp: 39.1, drink: '120 мл', med: 'Ибупрофен 10 мл', note: 'Ночной пик 39.1 °C, дан Ибупрофен', hours_ago: 12, timestamp: '12 ч назад' },
+            { id: 'p4', temp: 39.1, drink: '120 мл', med: 'Ибупрофен 10 мл', note: 'Ночной пик 39.1 °C, дан Ибупрофен 10 мл', hours_ago: 12, timestamp: '12 ч назад' },
             { id: 'p5', temp: 38.2, drink: '150 мл', med: null, note: 'Температура снизилась, отдыхает', hours_ago: 8, timestamp: '8 ч назад' },
             { id: 'p6', temp: 38.2, drink: '180 мл', med: null, note: 'Утренний замер, кашель сохраняется', hours_ago: 3, timestamp: '3 ч назад' }
         ],
@@ -82,6 +84,8 @@ function loadDatabase() {
         name: 'София',
         age: 4,
         weight: 16,
+        allergies: 'Аллергия на пенициллин',
+        doctorPhone: '',
         episode: 'Температура, 2-й день',
         points48h: [
             { id: 's1', temp: 37.5, drink: '120 мл', med: null, note: 'Усталость после садика', hours_ago: 36, timestamp: '36 ч назад' },
@@ -161,7 +165,6 @@ function getAuthUserId(req) {
 // ОСНОВНОЙ HTTP СЕРВЕР
 // -------------------------------------------------------------
 const server = http.createServer(async (req, res) => {
-    // CORS preflight
     if (req.method === 'OPTIONS') {
         res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
@@ -215,6 +218,8 @@ const server = http.createServer(async (req, res) => {
                     name: 'Мой ребёнок',
                     age: 5,
                     weight: 19,
+                    allergies: 'Нет',
+                    doctorPhone: '',
                     episode: 'Начало наблюдения',
                     points48h: [{
                         id: 'p_' + Date.now(),
@@ -337,6 +342,8 @@ const server = http.createServer(async (req, res) => {
                     name,
                     age: parseInt(body.age, 10) || 5,
                     weight: parseFloat(body.weight) || 18,
+                    allergies: (body.allergies || 'Нет').trim(),
+                    doctorPhone: (body.doctorPhone || '').trim(),
                     episode: (body.episode || 'Начало наблюдения').trim(),
                     points48h: [{
                         id: 'p_' + Date.now(),
@@ -393,7 +400,6 @@ const server = http.createServer(async (req, res) => {
                 const body = await parseJsonBody(req);
                 const temp = parseFloat(body.temp) || 37.0;
 
-                // Сдвигаем старые записи
                 child.points48h.forEach(p => { p.hours_ago = Math.min(48, (p.hours_ago || 0) + 2); });
 
                 const newEntry = {

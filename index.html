@@ -169,10 +169,84 @@
         /* Smooth tab styling */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+
+        /* Splash Pulse Animation */
+        @keyframes pulseLogo {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.06); opacity: 0.9; }
+        }
+        .animate-pulse-logo {
+            animation: pulseLogo 2s infinite ease-in-out;
+        }
+
+        /* Chip tags */
+        .symptom-chip {
+            transition: all 0.15s ease;
+        }
+        .symptom-chip.active {
+            background-color: #4fd1b5 !important;
+            color: #0b111a !important;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body class="bg-black antialiased h-full m-0 p-0 selection:bg-teal-500 selection:text-white">
 
+    <!-- ========================================================= -->
+    <!-- 🌟 ЗАГРУЗОЧНЫЙ ЭКРАН (SPLASH SCREEN / INTRO)               -->
+    <!-- ========================================================= -->
+    <div id="splashScreen" class="fixed inset-0 z-[100] flex flex-col items-center justify-between p-6 bg-[#0b111a] text-[#f1f5f9] transition-opacity duration-700">
+        <!-- Верхний статус -->
+        <div class="w-full flex justify-between items-center text-xs ps-muted pt-2">
+            <span class="flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
+                <span class="font-mono text-[11px]">PediaSense Clinical v2.0</span>
+            </span>
+            <span id="splashClock" class="font-mono text-[11px]">00:00</span>
+        </div>
+
+        <!-- Центральный брендинг с пульсацией -->
+        <div class="flex flex-col items-center text-center space-y-4 my-auto">
+            <div class="relative">
+                <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#3bbfa3] to-[#4fd1b5] text-[#0b111a] flex items-center justify-center font-serif-ed font-bold text-4xl shadow-2xl animate-pulse-logo">
+                    P
+                </div>
+                <!-- Медицинский крест / пульс -->
+                <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#131d2b] border-2 border-[#4fd1b5] flex items-center justify-center text-xs text-[#4fd1b5]">
+                    🩺
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <h1 class="font-serif-ed font-bold text-3xl tracking-tight text-white">PediaSense</h1>
+                <p class="text-xs text-[#94a3b8] max-w-xs leading-relaxed">Дневник болезни ребёнка и 15-секундный отчёт для педиатра</p>
+            </div>
+
+            <!-- Бейдж активного профиля ребенка -->
+            <div id="splashChildBadge" class="bg-[#131d2b] border border-[#233247] px-3.5 py-1.5 rounded-full text-xs text-[#4fd1b5] font-semibold flex items-center space-x-1.5 shadow-sm">
+                <span>👶</span>
+                <span id="splashChildInfo">Лев · 8 лет (26 кг)</span>
+            </div>
+        </div>
+
+        <!-- Нижняя шкала прогресса загрузки -->
+        <div class="w-full max-w-xs space-y-3 pb-4">
+            <div class="w-full bg-[#131d2b] h-1.5 rounded-full overflow-hidden border border-[#233247]">
+                <div id="splashProgressBar" class="h-full bg-gradient-to-r from-teal-400 to-rose-400 rounded-full transition-all duration-300" style="width: 15%"></div>
+            </div>
+            <div class="flex justify-between items-center text-[11px] text-[#94a3b8]">
+                <span id="splashStatusText">Синхронизация профиля...</span>
+                <span id="splashPercentText">15%</span>
+            </div>
+            <button onclick="dismissSplashScreen()" class="w-full text-center text-xs font-semibold text-teal-400/80 hover:text-teal-300 pt-1 transition">
+                Войти сразу →
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- ОСНОВНАЯ ОБОЛОЧКА ПРИЛОЖЕНИЯ                              -->
+    <!-- ========================================================= -->
     <div id="appShell" class="mobile-shell theme-dark shadow-2xl">
 
         <!-- ========================================================= -->
@@ -181,7 +255,7 @@
         <header class="ps-nav sticky top-0 z-40 border-b px-4 py-3 flex items-center justify-between backdrop-blur-md">
             <!-- Логотип и переключатель детей -->
             <div class="flex items-center space-x-2.5">
-                <div class="w-8 h-8 rounded-lg ps-btn-accent flex items-center justify-center font-serif-ed font-bold text-lg shadow-sm">
+                <div onclick="showSplashScreen()" class="w-8 h-8 rounded-lg ps-btn-accent flex items-center justify-center font-serif-ed font-bold text-lg shadow-sm cursor-pointer" title="Показать заставку">
                     P
                 </div>
                 <!-- Кнопка выбора активного ребенка -->
@@ -204,8 +278,13 @@
                 </div>
             </div>
 
-            <!-- Правые кнопки: темы + аккаунт -->
+            <!-- Правые кнопки: Калькулятор доз + Темы + Аккаунт -->
             <div class="flex items-center space-x-1.5">
+                <!-- Кнопка калькулятора дозировок -->
+                <button onclick="openDoseModal()" title="Умный расчёт дозировки по весу" class="w-8 h-8 rounded-full ps-card flex items-center justify-center text-sm hover:opacity-80 transition">
+                    💊
+                </button>
+
                 <!-- Кнопка смены темы -->
                 <div class="relative">
                     <button onclick="toggleThemeMenu()" title="Выбор темы оформления" class="w-8 h-8 rounded-full ps-card flex items-center justify-center text-sm hover:opacity-80 transition">
@@ -252,6 +331,9 @@
                         <p id="childSubline" class="text-xs ps-muted mt-0.5">Лев · 8 лет · 26 кг</p>
                     </div>
                     <div class="flex space-x-1.5 shrink-0">
+                        <button onclick="openDoseModal()" title="Рассчитать дозу жаропонижающего" class="ps-subcard border border-teal-500/40 font-bold text-xs px-2.5 py-2 rounded-xl text-teal-400 flex items-center space-x-1 hover:bg-teal-500/10 transition">
+                            <span>💊</span><span>Доза</span>
+                        </button>
                         <button onclick="openQrModal()" title="Отчёт для врача" class="ps-btn-accent font-bold text-xs px-3 py-2 rounded-xl flex items-center space-x-1 shadow-sm active:scale-95 transition">
                             <span>📄</span><span>Врачу</span>
                         </button>
@@ -277,6 +359,18 @@
                         <div id="lastMedVal" class="font-serif-ed font-bold text-sm truncate leading-none mt-1">Ибупрофен</div>
                         <span id="lastMedTime" class="text-[10px] ps-muted block mt-1">3 ч назад</span>
                     </div>
+                </div>
+
+                <!-- ⏳ Таймер безопасности приёма жаропонижающих -->
+                <div id="medSafetyCard" class="ps-subcard rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs border-l-4 border-l-teal-400">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-base">⏳</span>
+                        <div>
+                            <span id="medSafetyTitle" class="font-bold text-teal-400">Интервал жаропонижающих</span>
+                            <p id="medSafetyDesc" class="text-[11px] ps-muted">Ибупрофен был 3 ч назад. Следующий не ранее чем через 3-5 ч.</p>
+                        </div>
+                    </div>
+                    <button onclick="openDoseModal()" class="text-[11px] font-semibold text-teal-400 underline shrink-0 ml-2">Расчёт</button>
                 </div>
 
                 <!-- Ненавязчивый индикатор статуса -->
@@ -328,6 +422,19 @@
                         <button type="button" onclick="setQuickTemp(38.0)" class="ps-subcard hover:border-teal-400 py-1.5 rounded-xl text-xs font-bold transition">38.0°</button>
                         <button type="button" onclick="setQuickTemp(38.5)" class="ps-subcard hover:border-rose-400 py-1.5 rounded-xl text-xs font-bold transition text-rose-400">38.5°</button>
                         <button type="button" onclick="setQuickTemp(39.0)" class="ps-subcard hover:border-rose-400 py-1.5 rounded-xl text-xs font-bold transition text-rose-500">39.0°</button>
+                    </div>
+
+                    <!-- Быстрые чипы симптомов (в 1 клик) -->
+                    <div>
+                        <span class="block text-[11px] ps-muted mb-1.5">Частые симптомы (нажмите для выбора):</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" onclick="toggleSymptomChip(this, 'Кашель')" class="symptom-chip ps-subcard px-2.5 py-1 rounded-lg text-xs font-medium">🗣️ Кашель</button>
+                            <button type="button" onclick="toggleSymptomChip(this, 'Насморк')" class="symptom-chip ps-subcard px-2.5 py-1 rounded-lg text-xs font-medium">🤧 Насморк</button>
+                            <button type="button" onclick="toggleSymptomChip(this, 'Вялость')" class="symptom-chip ps-subcard px-2.5 py-1 rounded-lg text-xs font-medium">😴 Вялость</button>
+                            <button type="button" onclick="toggleSymptomChip(this, 'Озноб')" class="symptom-chip ps-subcard px-2.5 py-1 rounded-lg text-xs font-medium">🥶 Озноб</button>
+                            <button type="button" onclick="toggleSymptomChip(this, 'Болит горло')" class="symptom-chip ps-subcard px-2.5 py-1 rounded-lg text-xs font-medium">🔴 Горло</button>
+                            <button type="button" onclick="toggleSymptomChip(this, 'Пьёт воду хорошо')" class="symptom-chip ps-subcard px-2.5 py-1 rounded-lg text-xs font-medium">💧 Пьёт воду</button>
+                        </div>
                     </div>
 
                     <form onsubmit="handleDiarySubmit(event)" class="space-y-2.5">
@@ -421,7 +528,19 @@
                     </div>
                 </div>
 
-                <!-- Инфо и экстренный номер -->
+                <!-- Быстрые действия -->
+                <div class="ps-card rounded-2xl p-4 space-y-2 text-xs">
+                    <div class="flex justify-between items-center py-1.5 border-b border-current/10">
+                        <span>Загрузочный экран</span>
+                        <button onclick="showSplashScreen()" class="ps-accent font-bold hover:underline">Показать заставку →</button>
+                    </div>
+                    <div class="flex justify-between items-center py-1.5 border-b border-current/10">
+                        <span>Калькулятор дозировок</span>
+                        <button onclick="openDoseModal()" class="ps-accent font-bold hover:underline">Открыть расчёт →</button>
+                    </div>
+                </div>
+
+                <!-- Инфо -->
                 <div class="ps-card rounded-2xl p-4 space-y-2 text-xs ps-muted leading-relaxed">
                     <p class="font-bold text-current">О приложении PediaSense</p>
                     <p>Приложение сохраняет историю болезни и формирует стандартизированный отчёт для педиатра. Данные не заменяют консультацию квалифицированного врача.</p>
@@ -461,7 +580,6 @@
                     <button onclick="closeAuthModal()" class="text-sm ps-muted hover:text-white font-bold">✕</button>
                 </div>
 
-                <!-- Переключатель Вход / Регистрация -->
                 <div class="flex border-b border-current/10 text-xs font-semibold">
                     <button id="authTabLogin" onclick="setAuthTab('login')" class="flex-1 py-2 text-center border-b-2 border-teal-400 ps-accent">
                         Вход
@@ -471,7 +589,6 @@
                     </button>
                 </div>
 
-                <!-- Форма входа -->
                 <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-3 text-xs">
                     <div>
                         <label class="block ps-muted mb-1">Логин / Email</label>
@@ -486,7 +603,6 @@
                     </button>
                 </form>
 
-                <!-- Форма регистрации -->
                 <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-3 text-xs hidden">
                     <div>
                         <label class="block ps-muted mb-1">Ваше имя (родитель)</label>
@@ -505,7 +621,6 @@
                     </button>
                 </form>
 
-                <!-- Кнопка быстрого демо входа -->
                 <div class="border-t border-current/10 pt-3">
                     <button onclick="handleGuestDemo()" class="w-full ps-subcard hover:border-teal-400 py-2 rounded-xl text-xs font-semibold ps-muted hover:text-white transition">
                         🚀 Войти как Гость (Демо-режим)
@@ -543,6 +658,16 @@
                         <label class="block ps-muted mb-1">Что беспокоит (эпизод)</label>
                         <input type="text" id="newChildEpisode" placeholder="Кашель, 1-й день" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
                     </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block ps-muted mb-1">Аллергии (опция)</label>
+                            <input type="text" id="newChildAllergies" placeholder="Нет" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
+                        </div>
+                        <div>
+                            <label class="block ps-muted mb-1">Телефон педиатра</label>
+                            <input type="text" id="newChildDoctor" placeholder="+7..." class="ps-input w-full rounded-xl px-3 py-2 text-xs">
+                        </div>
+                    </div>
                     <button type="submit" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition">
                         Сохранить профиль
                     </button>
@@ -551,7 +676,60 @@
         </div>
 
         <!-- ========================================================= -->
-        <!-- МОДАЛЬНОЕ ОКНО 3: ОТЧЁТ ДЛЯ ПЕДИАТРА (QR + PDF)           -->
+        <!-- МОДАЛЬНОЕ ОКНО 3: УМНЫЙ КАЛЬКУЛЯТОР ДОЗИРОВОК             -->
+        <!-- ========================================================= -->
+        <div id="doseModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="ps-card rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] ps-accent font-semibold block">Безопасность жаропонижающих</span>
+                        <h3 class="font-serif-ed font-bold text-xl">Калькулятор дозировок</h3>
+                    </div>
+                    <button onclick="closeDoseModal()" class="text-sm ps-muted hover:text-white font-bold">✕</button>
+                </div>
+
+                <!-- Ввод веса и выбор лекарства -->
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block ps-muted mb-1">Вес ребёнка (кг):</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" step="0.5" id="calcWeightInput" oninput="calculateDosage()" class="ps-input flex-1 rounded-xl px-3 py-2 text-base font-bold text-teal-400">
+                            <span class="font-bold text-sm">кг</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block ps-muted mb-1">Выберите препарат:</label>
+                        <select id="calcMedSelect" onchange="calculateDosage()" class="ps-input w-full rounded-xl px-3 py-2 text-xs font-semibold">
+                            <option value="ibu_100">Ибупрофен (Нурофен) 100 мг / 5 мл</option>
+                            <option value="ibu_200">Ибупрофен Форте 200 мг / 5 мл</option>
+                            <option value="para_120">Парацетамол (Панадол) 120 мг / 5 мл</option>
+                            <option value="para_250">Парацетамол 250 мг / 5 мл</option>
+                        </select>
+                    </div>
+
+                    <!-- Карточка результата расчёта -->
+                    <div class="ps-subcard rounded-xl p-4 space-y-2 border border-teal-500/30">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-xs ps-muted">Разовая доза:</span>
+                            <span id="calcDoseResult" class="font-serif-ed font-bold text-2xl text-teal-400">13.0 мл</span>
+                        </div>
+                        <div class="text-[11px] space-y-1 pt-1 border-t border-current/10">
+                            <div class="flex justify-between"><span class="ps-muted">В миллиграммах:</span><strong id="calcMgResult">260 мг</strong></div>
+                            <div class="flex justify-between"><span class="ps-muted">Интервал:</span><strong id="calcIntervalResult">Не менее 6–8 часов</strong></div>
+                            <div class="flex justify-between"><span class="ps-muted">Максимум в сутки:</span><strong id="calcMaxResult">Не более 3 раз</strong></div>
+                        </div>
+                    </div>
+
+                    <button onclick="applyDoseToDiary()" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition">
+                        ✓ Записать эту дозу в дневник
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- МОДАЛЬНОЕ ОКНО 4: ОТЧЁТ ДЛЯ ПЕДИАТРА (QR + PDF)           -->
         <!-- ========================================================= -->
         <div id="qrModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="ps-card rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
@@ -584,7 +762,7 @@
         </div>
 
         <!-- ========================================================= -->
-        <!-- МОДАЛЬНОЕ ОКНО 4: ДОБАВИТЬ НАПОМИНАНИЕ                    -->
+        <!-- МОДАЛЬНОЕ ОКНО 5: ДОБАВИТЬ НАПОМИНАНИЕ                    -->
         <!-- ========================================================= -->
         <div id="reminderModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="ps-card rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
@@ -610,7 +788,7 @@
         </div>
 
         <!-- ========================================================= -->
-        <!-- МОДАЛЬНОЕ ОКНО 5: SOS 112 (ЭКСТРЕННАЯ ПОДСКАЗКА)          -->
+        <!-- МОДАЛЬНОЕ ОКНО 6: SOS 112 (ЭКСТРЕННАЯ ПОДСКАЗКА)          -->
         <!-- ========================================================= -->
         <div id="sosModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
             <div class="ps-card border-2 border-rose-500 rounded-2xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl">
@@ -647,6 +825,8 @@
                 name: "Лев",
                 age: 8,
                 weight: 26,
+                allergies: "Нет",
+                doctorPhone: "+7 (999) 000-00-00",
                 episode: "Кашель, 4-й день",
                 points48h: [
                     { id: "p1", temp: 38.4, drink: "150 мл", med: "Ибупрофен 10 мл", note: "Вечерний подъём температуры, сухой кашель", hours_ago: 40, timestamp: "40 ч назад" },
@@ -667,6 +847,8 @@
                 name: "София",
                 age: 4,
                 weight: 16,
+                allergies: "Аллергия на пенициллин",
+                doctorPhone: "",
                 episode: "Температура, 2-й день",
                 points48h: [
                     { id: "s1", temp: 37.5, drink: "120 мл", med: null, note: "Усталость после садика", hours_ago: 36, timestamp: "36 ч назад" },
@@ -690,18 +872,70 @@
         // Применяем сохраненную тему
         setTheme(currentTheme, false);
 
+        // ==========================================
+        // 🌟 ЗАГРУЗОЧНЫЙ ЭКРАН (SPLASH SCREEN LOGIC)
+        // ==========================================
+        function initSplashScreen() {
+            const child = getActiveChild();
+            if (child) {
+                document.getElementById('splashChildInfo').innerText = `${child.name} · ${child.age} лет (${child.weight} кг)`;
+            }
+
+            const pBar = document.getElementById('splashProgressBar');
+            const pText = document.getElementById('splashPercentText');
+            const sText = document.getElementById('splashStatusText');
+
+            let progress = 15;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 25) + 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    pBar.style.width = '100%';
+                    pText.innerText = '100%';
+                    sText.innerText = 'Всё готово!';
+                    setTimeout(dismissSplashScreen, 400);
+                } else {
+                    pBar.style.width = progress + '%';
+                    pText.innerText = progress + '%';
+                    if (progress > 50) sText.innerText = 'Проверка синхронизации...';
+                }
+            }, 180);
+        }
+
+        function dismissSplashScreen() {
+            const splash = document.getElementById('splashScreen');
+            if (splash) {
+                splash.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => { splash.classList.add('hidden'); }, 700);
+            }
+        }
+
+        function showSplashScreen() {
+            const splash = document.getElementById('splashScreen');
+            if (splash) {
+                splash.classList.remove('hidden');
+                setTimeout(() => {
+                    splash.classList.remove('opacity-0', 'pointer-events-none');
+                    initSplashScreen();
+                }, 20);
+            }
+        }
+
         // Обновление локальных часов
         function updateClock() {
             const now = new Date();
             const tStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const clockEl = document.getElementById('currentTimeLabel');
             if (clockEl) clockEl.innerText = tStr;
+            const sClock = document.getElementById('splashClock');
+            if (sClock) sClock.innerText = tStr;
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Проверка подключения к Rust-серверу
-        async function syncWithRustBackend() {
+        // Проверка подключения к бэкенду
+        async function syncWithBackend() {
             if (!authToken) return;
             try {
                 const res = await fetch('/api/me', {
@@ -721,8 +955,7 @@
                     }
                 }
             } catch (e) {
-                // Сервер оффлайн — работаем локально через localStorage
-                console.log("Режим локального хранилища (Rust сервер не подключен или оффлайн)");
+                console.log("Режим локального хранилища (бэкенд оффлайн или standalone)");
             }
         }
 
@@ -750,7 +983,7 @@
 
             // Карточка эпизода
             document.getElementById('childHeadline').innerText = child.episode || "Наблюдение";
-            document.getElementById('childSubline').innerText = `${child.name} · ${child.age} лет · ${child.weight} кг`;
+            document.getElementById('childSubline').innerText = `${child.name} · ${child.age} лет · ${child.weight} кг${child.allergies && child.allergies !== 'Нет' ? ' · ⚠️ ' + child.allergies : ''}`;
 
             // Статистика за 48 часов
             const temps = child.points48h.map(p => p.temp);
@@ -761,14 +994,43 @@
             document.getElementById('latestTempVal').innerText = `${latest.temp.toFixed(1)} °C`;
             document.getElementById('latestTempTime').innerText = latest.hours_ago === 0 ? 'Только что' : `${latest.hours_ago} ч назад`;
 
-            // Поиск последнего лекарства
+            // Поиск последнего лекарства и таймер безопасности
             const medEntry = [...child.points48h].reverse().find(p => p.med);
+            const medSafetyCard = document.getElementById('medSafetyCard');
+            const medSafetyTitle = document.getElementById('medSafetyTitle');
+            const medSafetyDesc = document.getElementById('medSafetyDesc');
+
             if (medEntry) {
                 document.getElementById('lastMedVal').innerText = medEntry.med;
                 document.getElementById('lastMedTime').innerText = medEntry.hours_ago === 0 ? 'Только что' : `${medEntry.hours_ago} ч назад`;
+
+                const hoursAgo = medEntry.hours_ago || 0;
+                const isIbu = medEntry.med.toLowerCase().includes('ибу') || medEntry.med.toLowerCase().includes('нуро');
+                const isPara = medEntry.med.toLowerCase().includes('парац') || medEntry.med.toLowerCase().includes('панад');
+
+                if (isIbu) {
+                    const waitIbu = Math.max(0, 6 - hoursAgo);
+                    const waitPara = Math.max(0, 3 - hoursAgo);
+                    medSafetyTitle.innerText = `Последний приём: ${medEntry.med} (${hoursAgo === 0 ? 'Только что' : hoursAgo + ' ч назад'})`;
+                    medSafetyDesc.innerText = waitIbu > 0 
+                        ? `Следующий Ибупрофен не ранее чем через ${waitIbu} ч. При необходимости Парацетамол возможен через ${waitPara} ч.`
+                        : `Интервал в 6 часов выдержан. При подъёме t > 38.5°C повторный приём разрешён.`;
+                } else if (isPara) {
+                    const waitPara = Math.max(0, 4 - hoursAgo);
+                    const waitIbu = Math.max(0, 2 - hoursAgo);
+                    medSafetyTitle.innerText = `Последний приём: ${medEntry.med} (${hoursAgo === 0 ? 'Только что' : hoursAgo + ' ч назад'})`;
+                    medSafetyDesc.innerText = waitPara > 0
+                        ? `Следующий Парацетамол не ранее чем через ${waitPara} ч. Ибупрофен возможен через ${waitIbu} ч.`
+                        : `Интервал выдержан. Повторный приём разрешён при температуре.`;
+                } else {
+                    medSafetyTitle.innerText = `Последнее лекарство: ${medEntry.med}`;
+                    medSafetyDesc.innerText = `Зафиксировано ${hoursAgo === 0 ? 'только что' : hoursAgo + ' ч назад'}.`;
+                }
             } else {
                 document.getElementById('lastMedVal').innerText = "Не давали";
                 document.getElementById('lastMedTime').innerText = "—";
+                medSafetyTitle.innerText = "Жаропонижающие не фиксировались";
+                medSafetyDesc.innerText = "Используйте калькулятор, чтобы узнать точную дозу по весу ребёнка.";
             }
 
             // Статус-бейдж
@@ -846,7 +1108,7 @@
                 row.className = `p-2 rounded-lg flex items-center justify-between cursor-pointer text-xs ${isActive ? 'ps-subcard font-bold ps-accent' : 'hover:bg-white/5'}`;
                 row.onclick = () => { currentChildIdx = idx; toggleChildrenDropdown(); renderApp(); };
                 row.innerHTML = `
-                    <span>${c.name} (${c.age} лет)</span>
+                    <span>${c.name} (${c.age} лет, ${c.weight} кг)</span>
                     ${isActive ? '<span>✓</span>' : ''}
                 `;
                 dropList.appendChild(row);
@@ -966,19 +1228,16 @@
                 const x = xForHours(p.hours_ago);
                 const y = yForTemp(p.temp);
 
-                // Ореол точки
                 ctx.fillStyle = '#131d2b';
                 ctx.beginPath();
                 ctx.arc(x, y, 5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Точка температуры
                 ctx.fillStyle = p.temp >= 38.0 ? '#fb7185' : '#2dd4bf';
                 ctx.beginPath();
                 ctx.arc(x, y, 3.5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Отметка лекарства ◆
                 if (p.med) {
                     const my = yForTemp(36.15);
                     const r = 4.5;
@@ -995,10 +1254,23 @@
         }
 
         // ==========================================
-        // БЫСТРЫЕ ДЕЙСТВИЯ И ДНЕВНИК
+        // БЫСТРЫЕ ДЕЙСТВИЯ, ТЕГИ И ДНЕВНИК
         // ==========================================
         function setQuickTemp(val) {
             document.getElementById('inputTemp').value = val;
+        }
+
+        function toggleSymptomChip(btn, text) {
+            btn.classList.toggle('active');
+            const noteInput = document.getElementById('inputNote');
+            let current = noteInput.value.trim();
+
+            if (btn.classList.contains('active')) {
+                if (!current) noteInput.value = text;
+                else if (!current.includes(text)) noteInput.value = current + ', ' + text;
+            } else {
+                noteInput.value = current.replace(text, '').replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',');
+            }
         }
 
         async function handleDiarySubmit(e) {
@@ -1011,7 +1283,6 @@
             const med = document.getElementById('inputMed').value.trim() || null;
             const note = document.getElementById('inputNote').value.trim() || "Замер";
 
-            // Сдвигаем старые точки на 2 часа назад
             child.points48h.forEach(p => { p.hours_ago = Math.min(48, (p.hours_ago || 0) + 2); });
 
             const newPoint = {
@@ -1027,7 +1298,9 @@
             child.points48h.push(newPoint);
             saveLocalState();
 
-            // Синхронизация с Rust API в фоне
+            // Сброс чипов
+            document.querySelectorAll('.symptom-chip').forEach(b => b.classList.remove('active'));
+
             if (authToken && !child.id.startsWith("c_")) {
                 fetch(`/api/children/${child.id}/entries`, {
                     method: 'POST',
@@ -1058,6 +1331,70 @@
             }
 
             renderApp();
+        }
+
+        // ==========================================
+        // 💊 УМНЫЙ КАЛЬКУЛЯТОР ДОЗИРОВОК
+        // ==========================================
+        function openDoseModal() {
+            const child = getActiveChild();
+            if (child) {
+                document.getElementById('calcWeightInput').value = child.weight || 20;
+            }
+            calculateDosage();
+            document.getElementById('doseModal').classList.remove('hidden');
+        }
+
+        function closeDoseModal() {
+            document.getElementById('doseModal').classList.add('hidden');
+        }
+
+        function calculateDosage() {
+            const weight = parseFloat(document.getElementById('calcWeightInput').value) || 20;
+            const medType = document.getElementById('calcMedSelect').value;
+
+            let singleDoseMl = 0;
+            let singleDoseMg = 0;
+            let interval = "";
+            let maxDaily = "";
+
+            if (medType === 'ibu_100') { // 100 мг / 5 мл (Нурофен) -> 10 мг/кг -> (W * 10) / 20 = W * 0.5 мл
+                singleDoseMg = Math.round(weight * 10);
+                singleDoseMl = +(weight * 0.5).toFixed(1);
+                interval = "Не менее 6–8 часов";
+                maxDaily = "До 3 раз в сутки (макс. 30 мг/кг)";
+            } else if (medType === 'ibu_200') { // 200 мг / 5 мл (Нурофен Форте) -> (W * 10) / 40 = W * 0.25 мл
+                singleDoseMg = Math.round(weight * 10);
+                singleDoseMl = +(weight * 0.25).toFixed(1);
+                interval = "Не менее 6–8 часов";
+                maxDaily = "До 3 раз в сутки (макс. 30 мг/кг)";
+            } else if (medType === 'para_120') { // 120 мг / 5 мл (Панадол) -> 15 мг/кг -> (W * 15) / 24 = W * 0.625 мл
+                singleDoseMg = Math.round(weight * 15);
+                singleDoseMl = +(weight * 0.625).toFixed(1);
+                interval = "Не менее 4–6 часов";
+                maxDaily = "До 4 раз в сутки (макс. 60 мг/кг)";
+            } else if (medType === 'para_250') { // 250 мг / 5 мл -> (W * 15) / 50 = W * 0.3 мл
+                singleDoseMg = Math.round(weight * 15);
+                singleDoseMl = +(weight * 0.3).toFixed(1);
+                interval = "Не менее 4–6 часов";
+                maxDaily = "До 4 раз в сутки (макс. 60 мг/кг)";
+            }
+
+            document.getElementById('calcDoseResult').innerText = `${singleDoseMl} мл`;
+            document.getElementById('calcMgResult').innerText = `${singleDoseMg} мг`;
+            document.getElementById('calcIntervalResult').innerText = interval;
+            document.getElementById('calcMaxResult').innerText = maxDaily;
+        }
+
+        function applyDoseToDiary() {
+            const medSelect = document.getElementById('calcMedSelect');
+            const medName = medSelect.options[medSelect.selectedIndex].text.split('(')[0].trim();
+            const doseMl = document.getElementById('calcDoseResult').innerText;
+
+            document.getElementById('inputMed').value = `${medName} ${doseMl}`;
+            closeDoseModal();
+            // Скроллим к форме
+            document.getElementById('inputMed').focus();
         }
 
         // ==========================================
@@ -1151,12 +1488,16 @@
             const age = parseInt(document.getElementById('newChildAge').value, 10) || 5;
             const weight = parseFloat(document.getElementById('newChildWeight').value) || 18;
             const episode = document.getElementById('newChildEpisode').value.trim() || "Начало наблюдения";
+            const allergies = (document.getElementById('newChildAllergies').value || 'Нет').trim();
+            const doctorPhone = (document.getElementById('newChildDoctor').value || '').trim();
 
             const newChild = {
                 id: "c_" + Date.now(),
                 name,
                 age,
                 weight,
+                allergies,
+                doctorPhone,
                 episode,
                 points48h: [
                     { id: "p_init", temp: 36.6, drink: "150 мл", med: null, note: "Профиль создан. Начало ведения дневника.", hours_ago: 0, timestamp: "Только что" }
@@ -1166,7 +1507,6 @@
                 ]
             };
 
-            // Синхронизация с Rust API
             if (authToken) {
                 try {
                     const res = await fetch('/api/children', {
@@ -1175,7 +1515,7 @@
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${authToken}`
                         },
-                        body: JSON.stringify({ name, age, weight, episode })
+                        body: JSON.stringify({ name, age, weight, episode, allergies, doctorPhone })
                     });
                     if (res.ok) {
                         const json = await res.json();
@@ -1270,7 +1610,6 @@
                     alert(json.message || "Ошибка авторизации");
                 }
             } catch (err) {
-                // Если нет бэкенда (оффлайн демо):
                 currentUser = { id: "local_u", username, name: username, theme: currentTheme };
                 authToken = "local_demo_token";
                 localStorage.setItem('ps_token', authToken);
@@ -1310,7 +1649,6 @@
                     alert(json.message || "Ошибка регистрации");
                 }
             } catch (err) {
-                // Оффлайн фоллбэк
                 currentUser = { id: "local_u", username, name, theme: currentTheme };
                 authToken = "local_demo_token";
                 localStorage.setItem('ps_token', authToken);
@@ -1453,7 +1791,8 @@
             doc.text(`Пациент: ${child.name}, ${child.age} лет, ${child.weight} кг (${child.episode})`, 14, 44);
 
             doc.setFontSize(10);
-            doc.text(`Пик (48 ч): ${peak.toFixed(1)} C   |   Средняя: ${avgT.toFixed(1)} C   |   Минимум: ${minT.toFixed(1)} C`, 14, 52);
+            const allergyText = child.allergies ? `   |   Аллергии: ${child.allergies}` : "";
+            doc.text(`Пик (48 ч): ${peak.toFixed(1)} C   |   Средняя: ${avgT.toFixed(1)} C   |   Минимум: ${minT.toFixed(1)} C${allergyText}`, 14, 52);
 
             let y = 68;
             doc.setFontSize(11);
@@ -1484,7 +1823,7 @@
             const med = [...child.points48h].reverse().find(p => p.med);
 
             document.getElementById('sosDispatcherText').innerText =
-                `Ребёнок: ${child.name}, возраст ${child.age} лет, вес ${child.weight} кг. Эпизод: ${child.episode}. Максимальная температура: ${peak.toFixed(1)} °C. Последнее лекарство: ${med ? med.med : 'не давали'}.`;
+                `Ребёнок: ${child.name}, возраст ${child.age} лет, вес ${child.weight} кг. Эпизод: ${child.episode}. Максимальная температура: ${peak.toFixed(1)} °C. Последнее лекарство: ${med ? med.med : 'не давали'}. Аллергии: ${child.allergies || 'нет'}.`;
             document.getElementById('sosModal').classList.remove('hidden');
         }
 
@@ -1527,9 +1866,10 @@
             }
         });
 
-        // Старт приложения
+        // Старт приложения + Запуск заставки
         renderApp();
-        syncWithRustBackend();
+        initSplashScreen();
+        syncWithBackend();
     </script>
 </body>
 </html>
