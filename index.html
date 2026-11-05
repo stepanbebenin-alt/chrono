@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PediaSense — Дневник болезни ребёнка</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QRious for doctor QR code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <!-- jsPDF for instant doctor report download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,600;0,6..72,700;1,6..72,600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-serif-ed {
+            font-family: 'Newsreader', Georgia, serif;
+            letter-spacing: -0.015em;
+        }
+        .mobile-shell {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        /* 1. ТЁМНАЯ ТЕМА (Midnight Slate - не слепит ночью в детской) */
+        .theme-dark {
+            background-color: #0b111a;
+            color: #f1f5f9;
+        }
+        .theme-dark .ps-card {
+            background-color: #131d2b;
+            border: 1px solid #233247;
+            color: #f1f5f9;
+        }
+        .theme-dark .ps-subcard {
+            background-color: #0e1622;
+            border: 1px solid #233247;
+            color: #e2e8f0;
+        }
+        .theme-dark .ps-input {
+            background-color: #0d141f;
+            border: 1px solid #28374d;
+            color: #f8fafc;
+        }
+        .theme-dark .ps-input::placeholder { color: #64748b; }
+        .theme-dark .ps-muted { color: #94a3b8; }
+        .theme-dark .ps-nav {
+            background-color: rgba(11, 17, 26, 0.95);
+            border-color: #1e2c3f;
+            color: #f1f5f9;
+        }
+        .theme-dark .ps-accent { color: #4fd1b5; }
+        .theme-dark .ps-btn-accent {
+            background-color: #4fd1b5;
+            color: #0b111a;
+        }
+        .theme-dark .ps-btn-accent:hover { background-color: #3bbfa3; }
+
+        /* 2. СВЕТЛАЯ ТЕМА (Clinical Light - чистый медицинский стиль) */
+        .theme-light {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .theme-light .ps-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #0f172a;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .theme-light .ps-subcard {
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+        .theme-light .ps-input {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #0f172a;
+        }
+        .theme-light .ps-input::placeholder { color: #94a3b8; }
+        .theme-light .ps-muted { color: #64748b; }
+        .theme-light .ps-nav {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-color: #e2e8f0;
+            color: #0f172a;
+        }
+        .theme-light .ps-accent { color: #0d9488; }
+        .theme-light .ps-btn-accent {
+            background-color: #0d9488;
+            color: #ffffff;
+        }
+        .theme-light .ps-btn-accent:hover { background-color: #0f766e; }
+
+        /* 3. МЯТНАЯ ТЕМА (Calm Mint - снимает родительскую тревогу) */
+        .theme-mint {
+            background-color: #06241f;
+            color: #ecfdf5;
+        }
+        .theme-mint .ps-card {
+            background-color: #0b362f;
+            border: 1px solid #16564b;
+            color: #ecfdf5;
+        }
+        .theme-mint .ps-subcard {
+            background-color: #082c26;
+            border: 1px solid #16564b;
+            color: #d1fae5;
+        }
+        .theme-mint .ps-input {
+            background-color: #06211c;
+            border: 1px solid #1d6b5e;
+            color: #ffffff;
+        }
+        .theme-mint .ps-input::placeholder { color: #6ee7b7; }
+        .theme-mint .ps-muted { color: #a7f3d0; }
+        .theme-mint .ps-nav {
+            background-color: rgba(6, 36, 31, 0.95);
+            border-color: #16564b;
+            color: #ecfdf5;
+        }
+        .theme-mint .ps-accent { color: #34d399; }
+        .theme-mint .ps-btn-accent {
+            background-color: #34d399;
+            color: #06241f;
+        }
+        .theme-mint .ps-btn-accent:hover { background-color: #10b981; }
+
+        /* 4. ТЁПЛАЯ ПАСТЕЛЬ (Soft Warmth - мягкая детская забота) */
+        .theme-warm {
+            background-color: #1c1917;
+            color: #fafaf9;
+        }
+        .theme-warm .ps-card {
+            background-color: #292524;
+            border: 1px solid #44403c;
+            color: #fafaf9;
+        }
+        .theme-warm .ps-subcard {
+            background-color: #211e1c;
+            border: 1px solid #44403c;
+            color: #f5f5f4;
+        }
+        .theme-warm .ps-input {
+            background-color: #1c1917;
+            border: 1px solid #57534e;
+            color: #ffffff;
+        }
+        .theme-warm .ps-input::placeholder { color: #a8a29e; }
+        .theme-warm .ps-muted { color: #d6d3d1; }
+        .theme-warm .ps-nav {
+            background-color: rgba(28, 25, 23, 0.95);
+            border-color: #44403c;
+            color: #fafaf9;
+        }
+        .theme-warm .ps-accent { color: #fb923c; }
+        .theme-warm .ps-btn-accent {
+            background-color: #fb923c;
+            color: #1c1917;
+        }
+        .theme-warm .ps-btn-accent:hover { background-color: #f97316; }
+
+        /* Smooth tab styling */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-black antialiased h-full m-0 p-0 selection:bg-teal-500 selection:text-white">
+
+    <div id="appShell" class="mobile-shell theme-dark shadow-2xl">
+
+        <!-- ========================================================= -->
+        <!-- ВЕРХНЯЯ ШАПКА ПРИЛОЖЕНИЯ                                 -->
+        <!-- ========================================================= -->
+        <header class="ps-nav sticky top-0 z-40 border-b px-4 py-3 flex items-center justify-between backdrop-blur-md">
+            <!-- Логотип и переключатель детей -->
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-lg ps-btn-accent flex items-center justify-center font-serif-ed font-bold text-lg shadow-sm">
+                    P
+                </div>
+                <!-- Кнопка выбора активного ребенка -->
+                <div class="relative">
+                    <button onclick="toggleChildrenDropdown()" id="childSelectorBtn" class="ps-card px-3 py-1.5 rounded-full flex items-center space-x-2 text-xs font-semibold hover:opacity-90 transition">
+                        <span id="headerChildInitial" class="w-5 h-5 rounded-full bg-teal-800 text-teal-200 text-[11px] font-bold flex items-center justify-center">Л</span>
+                        <span id="headerChildName" class="max-w-[90px] truncate">Лев, 8 лет</span>
+                        <span class="text-[10px] ps-muted">▾</span>
+                    </button>
+
+                    <!-- Выпадающий список детей -->
+                    <div id="childrenDropdown" class="hidden absolute top-full left-0 mt-1.5 w-64 ps-card rounded-xl shadow-xl p-2 z-50 space-y-1">
+                        <div id="childrenDropdownList" class="space-y-1 max-h-48 overflow-y-auto"></div>
+                        <div class="border-t border-current/10 pt-1.5 mt-1">
+                            <button onclick="openChildModal(); toggleChildrenDropdown();" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold ps-accent hover:bg-white/5 flex items-center space-x-1.5">
+                                <span>➕</span><span>Создать профиль ребёнка</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правые кнопки: темы + аккаунт -->
+            <div class="flex items-center space-x-1.5">
+                <!-- Кнопка смены темы -->
+                <div class="relative">
+                    <button onclick="toggleThemeMenu()" title="Выбор темы оформления" class="w-8 h-8 rounded-full ps-card flex items-center justify-center text-sm hover:opacity-80 transition">
+                        🎨
+                    </button>
+                    <!-- Меню тем -->
+                    <div id="themeMenu" class="hidden absolute top-full right-0 mt-1.5 w-44 ps-card rounded-xl shadow-xl p-1.5 z-50 text-xs font-medium space-y-1">
+                        <button onclick="setTheme('dark')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-white/10 flex items-center space-x-2">
+                            <span>🌑</span><span>Тёмная ночь</span>
+                        </button>
+                        <button onclick="setTheme('light')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-white/10 flex items-center space-x-2">
+                            <span>☀️</span><span>Светлая клиника</span>
+                        </button>
+                        <button onclick="setTheme('mint')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-white/10 flex items-center space-x-2">
+                            <span>🌿</span><span>Мятный покой</span>
+                        </button>
+                        <button onclick="setTheme('warm')" class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-white/10 flex items-center space-x-2">
+                            <span>🌸</span><span>Нежная пастель</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Кнопка авторизации / профиля -->
+                <button onclick="openAuthModal()" id="authBtn" class="ps-card px-2.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1 hover:opacity-80 transition">
+                    <span id="authIcon">👤</span>
+                    <span id="authLabel" class="max-w-[70px] truncate">Войти</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ========================================================= -->
+        <!-- ОСНОВНОЙ КОНТЕНТ (ЛЕГКИЙ И НЕ ПЕРЕГРУЖЕННЫЙ)             -->
+        <!-- ========================================================= -->
+        <main class="flex-1 px-4 py-3.5 space-y-3.5 pb-24 overflow-y-auto">
+
+            <!-- Вкладка 1: Главный дневник (по умолчанию) -->
+            <div id="tab-diary" class="tab-content active space-y-3.5">
+
+                <!-- Карточка текущего диагноза / состояния -->
+                <div class="ps-card rounded-2xl p-4 flex items-center justify-between">
+                    <div class="min-w-0 pr-2">
+                        <span class="text-[11px] ps-muted uppercase tracking-wider font-semibold">Текущий эпизод</span>
+                        <h2 id="childHeadline" class="font-serif-ed font-bold text-lg truncate">Кашель, 4-й день</h2>
+                        <p id="childSubline" class="text-xs ps-muted mt-0.5">Лев · 8 лет · 26 кг</p>
+                    </div>
+                    <div class="flex space-x-1.5 shrink-0">
+                        <button onclick="openQrModal()" title="Отчёт для врача" class="ps-btn-accent font-bold text-xs px-3 py-2 rounded-xl flex items-center space-x-1 shadow-sm active:scale-95 transition">
+                            <span>📄</span><span>Врачу</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Главные метрики: Текущая, Пик 48ч, Лекарство -->
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div class="ps-card rounded-2xl p-3 text-center">
+                        <span class="text-[10px] ps-muted block mb-1">Сейчас</span>
+                        <div id="latestTempVal" class="font-serif-ed font-bold text-xl leading-none">38.2 °C</div>
+                        <span id="latestTempTime" class="text-[10px] ps-muted block mt-1">3 ч назад</span>
+                    </div>
+
+                    <div class="ps-card rounded-2xl p-3 text-center border-l-2 border-l-rose-500">
+                        <span class="text-[10px] ps-muted block mb-1">Пик за 48 ч</span>
+                        <div id="highestTempVal" class="font-serif-ed font-bold text-xl text-rose-400 leading-none">39.1 °C</div>
+                        <span class="text-[10px] text-rose-400/80 block mt-1">максимум</span>
+                    </div>
+
+                    <div class="ps-card rounded-2xl p-3 text-center">
+                        <span class="text-[10px] ps-muted block mb-1">Лекарство</span>
+                        <div id="lastMedVal" class="font-serif-ed font-bold text-sm truncate leading-none mt-1">Ибупрофен</div>
+                        <span id="lastMedTime" class="text-[10px] ps-muted block mt-1">3 ч назад</span>
+                    </div>
+                </div>
+
+                <!-- Ненавязчивый индикатор статуса -->
+                <div id="statusBadge" class="ps-card rounded-xl px-3.5 py-2.5 flex items-center space-x-2 text-xs border-l-4 border-l-rose-500">
+                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                    <span id="statusText" class="font-semibold text-rose-400">Пик 39.1 °C. Регулярно предлагайте воду и ведите учёт дозировок.</span>
+                </div>
+
+                <!-- Интерактивный график за 48 часов -->
+                <div class="ps-card rounded-2xl p-4 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-serif-ed font-bold text-base">Динамика за 48 часов</h3>
+                            <p class="text-[11px] ps-muted">Линия температуры и отметки лекарств</p>
+                        </div>
+                        <span class="text-[11px] font-mono px-2 py-0.5 rounded-md ps-subcard">Порог: 38.0 °C</span>
+                    </div>
+
+                    <div class="w-full h-[180px] pt-1">
+                        <canvas id="chart48h" width="420" height="180" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <div class="flex items-center justify-center space-x-4 pt-1 text-[11px] ps-muted">
+                        <span class="flex items-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>
+                            <span>Температура</span>
+                        </span>
+                        <span class="flex items-center space-x-1.5">
+                            <span class="text-teal-400 font-bold">◆</span>
+                            <span>Приём лекарства</span>
+                        </span>
+                        <span class="flex items-center space-x-1.5">
+                            <span class="w-3 border-b border-dashed border-amber-400 inline-block"></span>
+                            <span>Жар (38.0 °C)</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Быстрая форма добавления замера (В 2 клика) -->
+                <div class="ps-card rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-serif-ed font-bold text-base">Быстрая запись</h3>
+                        <span id="currentTimeLabel" class="text-xs ps-muted font-mono">00:00</span>
+                    </div>
+
+                    <!-- Кнопки быстрых температур -->
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="setQuickTemp(37.5)" class="ps-subcard hover:border-teal-400 py-1.5 rounded-xl text-xs font-bold transition">37.5°</button>
+                        <button type="button" onclick="setQuickTemp(38.0)" class="ps-subcard hover:border-teal-400 py-1.5 rounded-xl text-xs font-bold transition">38.0°</button>
+                        <button type="button" onclick="setQuickTemp(38.5)" class="ps-subcard hover:border-rose-400 py-1.5 rounded-xl text-xs font-bold transition text-rose-400">38.5°</button>
+                        <button type="button" onclick="setQuickTemp(39.0)" class="ps-subcard hover:border-rose-400 py-1.5 rounded-xl text-xs font-bold transition text-rose-500">39.0°</button>
+                    </div>
+
+                    <form onsubmit="handleDiarySubmit(event)" class="space-y-2.5">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] ps-muted mb-1">Температура (°C)</label>
+                                <input type="number" step="0.1" id="inputTemp" placeholder="38.2" required class="ps-input w-full rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-teal-400">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] ps-muted mb-1">Питье (мл, опция)</label>
+                                <input type="text" id="inputDrink" placeholder="150 мл" class="ps-input w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] ps-muted mb-1">Лекарство (опция)</label>
+                                <input type="text" id="inputMed" placeholder="Ибупрофен 10 мл" class="ps-input w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] ps-muted mb-1">Симптом / состояние</label>
+                                <input type="text" id="inputNote" placeholder="Сонливый, кашель" required class="ps-input w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition shadow-sm active:scale-[0.99]">
+                            + Сохранить замер
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Хронология записей -->
+                <div class="ps-card rounded-2xl p-4 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-serif-ed font-bold text-base">История измерений</h3>
+                        <span id="entriesCount" class="text-xs ps-muted">0 записей</span>
+                    </div>
+                    <div id="diaryEntriesList" class="space-y-2 max-h-60 overflow-y-auto pr-0.5"></div>
+                </div>
+
+            </div>
+
+            <!-- Вкладка 2: Напоминания о лекарствах -->
+            <div id="tab-reminders" class="tab-content space-y-3.5">
+                <div class="ps-card rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-serif-ed font-bold text-lg">Приём лекарств</h3>
+                            <p class="text-xs ps-muted">Расписание жаропонижающих и питьевого режима</p>
+                        </div>
+                        <button onclick="openAddReminderModal()" class="ps-btn-accent px-3 py-1.5 rounded-xl text-xs font-bold">
+                            + Добавить
+                        </button>
+                    </div>
+                    <div id="remindersList" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Вкладка 3: Профили детей и настройки -->
+            <div id="tab-settings" class="tab-content space-y-3.5">
+                <!-- Дети -->
+                <div class="ps-card rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-serif-ed font-bold text-lg">Профили детей</h3>
+                            <p class="text-xs ps-muted">Переключение и управление профилями</p>
+                        </div>
+                        <button onclick="openChildModal()" class="ps-btn-accent px-3 py-1.5 rounded-xl text-xs font-bold">
+                            + Создать
+                        </button>
+                    </div>
+                    <div id="settingsChildrenList" class="space-y-2"></div>
+                </div>
+
+                <!-- Оформление -->
+                <div class="ps-card rounded-2xl p-4 space-y-3">
+                    <h3 class="font-serif-ed font-bold text-lg">Цветовая тема</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+                        <button onclick="setTheme('dark')" class="p-3 rounded-xl border border-slate-700 bg-[#0b111a] text-white flex items-center space-x-2">
+                            <span>🌑</span><span>Тёмная ночь</span>
+                        </button>
+                        <button onclick="setTheme('light')" class="p-3 rounded-xl border border-slate-300 bg-white text-slate-900 flex items-center space-x-2">
+                            <span>☀️</span><span>Светлая клиника</span>
+                        </button>
+                        <button onclick="setTheme('mint')" class="p-3 rounded-xl border border-emerald-700 bg-[#06241f] text-emerald-100 flex items-center space-x-2">
+                            <span>🌿</span><span>Мятный покой</span>
+                        </button>
+                        <button onclick="setTheme('warm')" class="p-3 rounded-xl border border-amber-800 bg-[#1c1917] text-amber-100 flex items-center space-x-2">
+                            <span>🌸</span><span>Нежная пастель</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Инфо и экстренный номер -->
+                <div class="ps-card rounded-2xl p-4 space-y-2 text-xs ps-muted leading-relaxed">
+                    <p class="font-bold text-current">О приложении PediaSense</p>
+                    <p>Приложение сохраняет историю болезни и формирует стандартизированный отчёт для педиатра. Данные не заменяют консультацию квалифицированного врача.</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- ========================================================= -->
+        <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ + КНОПКА SOS 112                  -->
+        <!-- ========================================================= -->
+        <nav class="ps-nav border-t fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md">
+            <div class="max-w-[480px] mx-auto px-4 py-2 flex items-center justify-between">
+                <button onclick="switchTab('diary')" id="nav-diary" class="flex flex-col items-center py-1 text-xs font-bold ps-accent">
+                    <span class="text-base">📊</span><span>Дневник</span>
+                </button>
+                <button onclick="switchTab('reminders')" id="nav-reminders" class="flex flex-col items-center py-1 text-xs font-medium ps-muted">
+                    <span class="text-base">⏰</span><span>Лекарства</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center py-1 text-xs font-medium ps-muted">
+                    <span class="text-base">⚙️</span><span>Настройки</span>
+                </button>
+                <!-- Экстренная кнопка SOS 112 -->
+                <button onclick="openSosModal()" class="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-md flex items-center space-x-1.5 transition">
+                    <span>🚨</span><span>SOS 112</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- ========================================================= -->
+        <!-- МОДАЛЬНОЕ ОКНО 1: ВХОД И РЕГИСТРАЦИЯ                      -->
+        <!-- ========================================================= -->
+        <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="ps-card rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 id="authModalTitle" class="font-serif-ed font-bold text-xl">Авторизация</h3>
+                    <button onclick="closeAuthModal()" class="text-sm ps-muted hover:text-white font-bold">✕</button>
+                </div>
+
+                <!-- Переключатель Вход / Регистрация -->
+                <div class="flex border-b border-current/10 text-xs font-semibold">
+                    <button id="authTabLogin" onclick="setAuthTab('login')" class="flex-1 py-2 text-center border-b-2 border-teal-400 ps-accent">
+                        Вход
+                    </button>
+                    <button id="authTabRegister" onclick="setAuthTab('register')" class="flex-1 py-2 text-center border-b-2 border-transparent ps-muted">
+                        Регистрация
+                    </button>
+                </div>
+
+                <!-- Форма входа -->
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block ps-muted mb-1">Логин / Email</label>
+                        <input type="text" id="loginUsername" placeholder="demo" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block ps-muted mb-1">Пароль</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <button type="submit" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition">
+                        Войти в аккаунт
+                    </button>
+                </form>
+
+                <!-- Форма регистрации -->
+                <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-3 text-xs hidden">
+                    <div>
+                        <label class="block ps-muted mb-1">Ваше имя (родитель)</label>
+                        <input type="text" id="regName" placeholder="Анна" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block ps-muted mb-1">Логин / Email</label>
+                        <input type="text" id="regUsername" placeholder="anna_m" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block ps-muted mb-1">Пароль</label>
+                        <input type="password" id="regPassword" placeholder="••••••••" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <button type="submit" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition">
+                        Создать аккаунт
+                    </button>
+                </form>
+
+                <!-- Кнопка быстрого демо входа -->
+                <div class="border-t border-current/10 pt-3">
+                    <button onclick="handleGuestDemo()" class="w-full ps-subcard hover:border-teal-400 py-2 rounded-xl text-xs font-semibold ps-muted hover:text-white transition">
+                        🚀 Войти как Гость (Демо-режим)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- МОДАЛЬНОЕ ОКНО 2: СОЗДАНИЕ РЕБЕНКА                        -->
+        <!-- ========================================================= -->
+        <div id="childModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="ps-card rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-serif-ed font-bold text-xl">Создать профиль ребёнка</h3>
+                    <button onclick="closeChildModal()" class="text-sm ps-muted hover:text-white font-bold">✕</button>
+                </div>
+
+                <form onsubmit="handleCreateChild(event)" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block ps-muted mb-1">Имя ребёнка</label>
+                        <input type="text" id="newChildName" placeholder="Лев" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block ps-muted mb-1">Возраст (лет)</label>
+                            <input type="number" id="newChildAge" placeholder="8" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label class="block ps-muted mb-1">Вес (кг, для дозировок)</label>
+                            <input type="number" step="0.5" id="newChildWeight" placeholder="26" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block ps-muted mb-1">Что беспокоит (эпизод)</label>
+                        <input type="text" id="newChildEpisode" placeholder="Кашель, 1-й день" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <button type="submit" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition">
+                        Сохранить профиль
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- МОДАЛЬНОЕ ОКНО 3: ОТЧЁТ ДЛЯ ПЕДИАТРА (QR + PDF)           -->
+        <!-- ========================================================= -->
+        <div id="qrModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="ps-card rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] ps-accent font-semibold block">Для приёма врача</span>
+                        <h3 class="font-serif-ed font-bold text-xl">Отчёт за 48 часов</h3>
+                    </div>
+                    <button onclick="closeQrModal()" class="text-sm ps-muted hover:text-white font-bold">✕</button>
+                </div>
+
+                <div class="ps-subcard rounded-xl p-4 flex flex-col items-center space-y-2">
+                    <div class="bg-white p-2.5 rounded-xl shadow-md">
+                        <canvas id="qrCanvas" class="w-40 h-40"></canvas>
+                    </div>
+                    <span id="qrReportCode" class="text-[11px] font-mono ps-accent">ОТЧЁТ #PS-0000</span>
+                    <p class="text-[11px] ps-muted text-center">Педиатр сканирует QR камерой и сразу видит динамику</p>
+                </div>
+
+                <div class="ps-subcard rounded-xl p-3 text-xs space-y-1">
+                    <div class="flex justify-between"><span class="ps-muted">Пациент:</span><strong id="qrPatient">Лев, 8 лет, 26 кг</strong></div>
+                    <div class="flex justify-between"><span class="ps-muted">Макс. температура:</span><strong id="qrPeak" class="text-rose-400">39.1 °C</strong></div>
+                    <div class="flex justify-between"><span class="ps-muted">Посл. лекарство:</span><strong id="qrMed">Ибупрофен 10 мл</strong></div>
+                </div>
+
+                <button onclick="downloadPdfReport()" class="w-full ps-btn-accent font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2 transition">
+                    <span>📥</span><span>Скачать PDF для врача</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- МОДАЛЬНОЕ ОКНО 4: ДОБАВИТЬ НАПОМИНАНИЕ                    -->
+        <!-- ========================================================= -->
+        <div id="reminderModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="ps-card rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-serif-ed font-bold text-xl">Напоминание о лекарстве</h3>
+                    <button onclick="closeAddReminderModal()" class="text-sm ps-muted hover:text-white font-bold">✕</button>
+                </div>
+
+                <form onsubmit="handleSaveReminder(event)" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block ps-muted mb-1">Лекарство / действие</label>
+                        <input type="text" id="newRemTitle" placeholder="Ибупрофен 10 мл (при t > 38.5)" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block ps-muted mb-1">Интервал / Время</label>
+                        <input type="text" id="newRemTime" placeholder="Каждые 6–8 часов" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm">
+                    </div>
+                    <button type="submit" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition">
+                        Сохранить
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- МОДАЛЬНОЕ ОКНО 5: SOS 112 (ЭКСТРЕННАЯ ПОДСКАЗКА)          -->
+        <!-- ========================================================= -->
+        <div id="sosModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+            <div class="ps-card border-2 border-rose-500 rounded-2xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-serif-ed font-bold text-xl text-rose-500">🚨 Экстренная помощь (112)</h3>
+                    <button onclick="closeSosModal()" class="text-sm ps-muted hover:text-white font-bold">✕</button>
+                </div>
+                <p class="text-xs text-rose-200 leading-relaxed">
+                    Если ребёнок тяжело дышит, хрипит, не реагирует на слова, синеют губы или судороги — <strong>немедленно звоните 112</strong>!
+                </p>
+                <div class="ps-subcard border border-rose-500/30 rounded-xl p-3 text-xs space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-rose-400">Подсказка диспетчеру скорой:</span>
+                    <p id="sosDispatcherText" class="font-medium leading-relaxed"></p>
+                </div>
+                <a href="tel:112" class="block w-full bg-rose-600 hover:bg-rose-700 text-white text-center font-bold py-3 rounded-xl text-sm transition">
+                    📞 Вызвать 112 прямо сейчас
+                </a>
+                <button onclick="closeSosModal()" class="w-full ps-subcard py-2 rounded-xl text-xs ps-muted">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- СКРИПТ: РАБОТАЕТ И С RUST-СЕРВЕРОМ, И АВТОНОМНО (OFFLINE) -->
+    <!-- ========================================================= -->
+    <script>
+        // Инициализационные данные (по умолчанию)
+        const DEFAULT_CHILDREN = [
+            {
+                id: "c_leo",
+                name: "Лев",
+                age: 8,
+                weight: 26,
+                episode: "Кашель, 4-й день",
+                points48h: [
+                    { id: "p1", temp: 38.4, drink: "150 мл", med: "Ибупрофен 10 мл", note: "Вечерний подъём температуры, сухой кашель", hours_ago: 40, timestamp: "40 ч назад" },
+                    { id: "p2", temp: 37.8, drink: "200 мл", med: null, note: "Спал спокойно после жаропонижающего", hours_ago: 30, timestamp: "30 ч назад" },
+                    { id: "p3", temp: 38.6, drink: "100 мл", med: null, note: "Приступы кашля днём, слабость", hours_ago: 21, timestamp: "21 ч назад" },
+                    { id: "p4", temp: 39.1, drink: "120 мл", med: "Ибупрофен 10 мл", note: "Ночной пик 39.1 °C, дан Ибупрофен", hours_ago: 12, timestamp: "12 ч назад" },
+                    { id: "p5", temp: 38.2, drink: "150 мл", med: null, note: "Температура снизилась, отдыхает", hours_ago: 8, timestamp: "8 ч назад" },
+                    { id: "p6", temp: 38.2, drink: "180 мл", med: null, note: "Утренний замер, кашель сохраняется", hours_ago: 3, timestamp: "3 ч назад" }
+                ],
+                reminders: [
+                    { id: "r1", title: "Ибупрофен 10 мл (при t > 38.5 °C)", time: "Каждые 6–8 часов", done: true },
+                    { id: "r2", title: "Теплое питье / компот (150 мл)", time: "Каждые 2 часа", done: false },
+                    { id: "r3", title: "Визит педиатра с QR-отчётом", time: "Сегодня в 16:30", done: false }
+                ]
+            },
+            {
+                id: "c_sofia",
+                name: "София",
+                age: 4,
+                weight: 16,
+                episode: "Температура, 2-й день",
+                points48h: [
+                    { id: "s1", temp: 37.5, drink: "120 мл", med: null, note: "Усталость после садика", hours_ago: 36, timestamp: "36 ч назад" },
+                    { id: "s2", temp: 38.4, drink: "100 мл", med: "Парацетамол 5 мл", note: "Ночная температура", hours_ago: 24, timestamp: "24 ч назад" },
+                    { id: "s3", temp: 37.7, drink: "150 мл", med: null, note: "Играет, бодрая", hours_ago: 1, timestamp: "1 ч назад" }
+                ],
+                reminders: [
+                    { id: "r4", title: "Парацетамол 5 мл (при необходимости)", time: "Не чаще раза в 6 часов", done: true },
+                    { id: "r5", title: "Вода мелкими глотками", time: "Каждые 30 мин", done: false }
+                ]
+            }
+        ];
+
+        // Состояние приложения
+        let currentUser = JSON.parse(localStorage.getItem('ps_user') || 'null');
+        let authToken = localStorage.getItem('ps_token') || null;
+        let children = JSON.parse(localStorage.getItem('ps_children') || 'null') || DEFAULT_CHILDREN;
+        let currentChildIdx = 0;
+        let currentTheme = localStorage.getItem('ps_theme') || 'dark';
+
+        // Применяем сохраненную тему
+        setTheme(currentTheme, false);
+
+        // Обновление локальных часов
+        function updateClock() {
+            const now = new Date();
+            const tStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const clockEl = document.getElementById('currentTimeLabel');
+            if (clockEl) clockEl.innerText = tStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Проверка подключения к Rust-серверу
+        async function syncWithRustBackend() {
+            if (!authToken) return;
+            try {
+                const res = await fetch('/api/me', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        currentUser = json.data.user;
+                        if (json.data.children && json.data.children.length > 0) {
+                            children = json.data.children;
+                            localStorage.setItem('ps_children', JSON.stringify(children));
+                        }
+                        if (currentUser.theme) setTheme(currentUser.theme, false);
+                        updateAuthBadge();
+                        renderApp();
+                    }
+                }
+            } catch (e) {
+                // Сервер оффлайн — работаем локально через localStorage
+                console.log("Режим локального хранилища (Rust сервер не подключен или оффлайн)");
+            }
+        }
+
+        function saveLocalState() {
+            localStorage.setItem('ps_children', JSON.stringify(children));
+            if (currentUser) localStorage.setItem('ps_user', JSON.stringify(currentUser));
+        }
+
+        // ==========================================
+        // ОТРИСОВКА ИНТЕРФЕЙСА
+        // ==========================================
+        function getActiveChild() {
+            if (!children || children.length === 0) return null;
+            if (currentChildIdx >= children.length) currentChildIdx = 0;
+            return children[currentChildIdx];
+        }
+
+        function renderApp() {
+            const child = getActiveChild();
+            if (!child) return;
+
+            // Шапка: ребенок
+            document.getElementById('headerChildInitial').innerText = child.name.charAt(0).toUpperCase();
+            document.getElementById('headerChildName').innerText = `${child.name}, ${child.age} лет`;
+
+            // Карточка эпизода
+            document.getElementById('childHeadline').innerText = child.episode || "Наблюдение";
+            document.getElementById('childSubline').innerText = `${child.name} · ${child.age} лет · ${child.weight} кг`;
+
+            // Статистика за 48 часов
+            const temps = child.points48h.map(p => p.temp);
+            const peak = temps.length ? Math.max(...temps) : 36.6;
+            const latest = child.points48h.length ? child.points48h[child.points48h.length - 1] : { temp: 36.6, hours_ago: 0 };
+
+            document.getElementById('highestTempVal').innerText = `${peak.toFixed(1)} °C`;
+            document.getElementById('latestTempVal').innerText = `${latest.temp.toFixed(1)} °C`;
+            document.getElementById('latestTempTime').innerText = latest.hours_ago === 0 ? 'Только что' : `${latest.hours_ago} ч назад`;
+
+            // Поиск последнего лекарства
+            const medEntry = [...child.points48h].reverse().find(p => p.med);
+            if (medEntry) {
+                document.getElementById('lastMedVal').innerText = medEntry.med;
+                document.getElementById('lastMedTime').innerText = medEntry.hours_ago === 0 ? 'Только что' : `${medEntry.hours_ago} ч назад`;
+            } else {
+                document.getElementById('lastMedVal').innerText = "Не давали";
+                document.getElementById('lastMedTime').innerText = "—";
+            }
+
+            // Статус-бейдж
+            const statusBadge = document.getElementById('statusBadge');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            if (peak >= 39.0) {
+                statusBadge.className = 'ps-card rounded-xl px-3.5 py-2.5 flex items-center space-x-2 text-xs border-l-4 border-l-rose-500';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse';
+                statusText.className = 'font-semibold text-rose-400';
+                statusText.innerText = `Пик ${peak.toFixed(1)} °C. Высокая температура, предлагайте воду мелкими глотками.`;
+            } else if (peak >= 38.0) {
+                statusBadge.className = 'ps-card rounded-xl px-3.5 py-2.5 flex items-center space-x-2 text-xs border-l-4 border-l-amber-500';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+                statusText.className = 'font-semibold text-amber-400';
+                statusText.innerText = `Умеренный жар (${peak.toFixed(1)} °C). Наблюдайте за самочувствием.`;
+            } else {
+                statusBadge.className = 'ps-card rounded-xl px-3.5 py-2.5 flex items-center space-x-2 text-xs border-l-4 border-l-teal-500';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-teal-500';
+                statusText.className = 'font-semibold text-teal-400';
+                statusText.innerText = `Температура в пределах нормы. Динамика стабильна.`;
+            }
+
+            // Список замеров в дневнике
+            const entriesList = document.getElementById('diaryEntriesList');
+            entriesList.innerHTML = '';
+            document.getElementById('entriesCount').innerText = `${child.points48h.length} записей`;
+
+            [...child.points48h].reverse().forEach((p, revIdx) => {
+                const realIdx = child.points48h.length - 1 - revIdx;
+                const timeStr = p.hours_ago === 0 ? "Только что" : `${p.hours_ago} ч назад`;
+                const item = document.createElement('div');
+                item.className = 'ps-subcard rounded-xl p-3 flex justify-between items-start';
+                item.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                            <span class="font-serif-ed font-bold text-sm ${p.temp >= 38.0 ? 'text-rose-400' : 'ps-accent'}">${p.temp.toFixed(1)} °C</span>
+                            <span class="text-[11px] ps-muted">· ${timeStr}</span>
+                            ${p.med ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-teal-900/40 text-teal-300">◆ ${p.med}</span>` : ''}
+                            ${p.drink ? `<span class="text-[10px] ps-muted">💧 ${p.drink}</span>` : ''}
+                        </div>
+                        <p class="text-xs opacity-90">${p.note || 'Замер'}</p>
+                    </div>
+                    <button onclick="deleteDiaryPoint(${realIdx})" class="text-xs ps-muted hover:text-rose-400 p-1">✕</button>
+                `;
+                entriesList.appendChild(item);
+            });
+
+            // Список напоминаний
+            const remList = document.getElementById('remindersList');
+            remList.innerHTML = '';
+            child.reminders.forEach((r, idx) => {
+                const row = document.createElement('div');
+                row.className = 'ps-subcard rounded-xl p-3 flex items-center justify-between';
+                row.innerHTML = `
+                    <label class="flex items-start space-x-3 cursor-pointer select-none">
+                        <input type="checkbox" ${r.done ? 'checked' : ''} onchange="toggleReminder(${idx})" class="mt-0.5 w-4 h-4 accent-teal-400 rounded">
+                        <div>
+                            <p class="text-xs font-semibold ${r.done ? 'line-through opacity-50' : ''}">${r.title}</p>
+                            <p class="text-[11px] ps-accent">${r.time}</p>
+                        </div>
+                    </label>
+                    <button onclick="deleteReminder(${idx})" class="text-xs ps-muted hover:text-rose-400 p-1">🗑️</button>
+                `;
+                remList.appendChild(row);
+            });
+
+            // Выпадающий список выбора детей
+            const dropList = document.getElementById('childrenDropdownList');
+            dropList.innerHTML = '';
+            children.forEach((c, idx) => {
+                const isActive = idx === currentChildIdx;
+                const row = document.createElement('div');
+                row.className = `p-2 rounded-lg flex items-center justify-between cursor-pointer text-xs ${isActive ? 'ps-subcard font-bold ps-accent' : 'hover:bg-white/5'}`;
+                row.onclick = () => { currentChildIdx = idx; toggleChildrenDropdown(); renderApp(); };
+                row.innerHTML = `
+                    <span>${c.name} (${c.age} лет)</span>
+                    ${isActive ? '<span>✓</span>' : ''}
+                `;
+                dropList.appendChild(row);
+            });
+
+            // Список детей в настройках
+            const setChildList = document.getElementById('settingsChildrenList');
+            setChildList.innerHTML = '';
+            children.forEach((c, idx) => {
+                const isActive = idx === currentChildIdx;
+                const row = document.createElement('div');
+                row.className = `ps-subcard rounded-xl p-3 flex items-center justify-between cursor-pointer ${isActive ? 'border-teal-400' : ''}`;
+                row.onclick = () => { currentChildIdx = idx; renderApp(); };
+                row.innerHTML = `
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-7 h-7 rounded-full bg-teal-900/60 text-teal-300 font-bold text-xs flex items-center justify-center">${c.name.charAt(0).toUpperCase()}</span>
+                        <div>
+                            <p class="text-xs font-bold">${c.name}, ${c.age} лет, ${c.weight} кг</p>
+                            <p class="text-[11px] ps-muted">${c.episode}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[11px] ${isActive ? 'ps-accent font-bold' : 'ps-muted'}">${isActive ? 'Активен' : 'Выбрать'}</span>
+                        <button onclick="deleteChildProfile(${idx}, event)" class="w-6 h-6 rounded bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 text-xs flex items-center justify-center">🗑️</button>
+                    </div>
+                `;
+                setChildList.appendChild(row);
+            });
+
+            drawChart48h();
+            updateAuthBadge();
+        }
+
+        // ==========================================
+        // ГРАФИК 48 ЧАСОВ (CANVAS)
+        // ==========================================
+        function drawChart48h() {
+            const canvas = document.getElementById('chart48h');
+            if (!canvas) return;
+            const child = getActiveChild();
+            if (!child) return;
+
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            const padL = 34;
+            const padR = 16;
+            const padT = 20;
+            const padB = 26;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            const yForTemp = (t) => padT + ((40 - t) / 4) * plotH;
+            const xForHours = (h) => padL + ((48 - h) / 48) * plotW;
+
+            // Горизонтальные линии температур (36..40)
+            ctx.font = '10px Inter, sans-serif';
+            ctx.textAlign = 'right';
+            [40, 39, 38, 37, 36].forEach(t => {
+                const y = yForTemp(t);
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(W - padR, y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillText(`${t}°`, padL - 6, y + 3);
+            });
+
+            // Пунктирная линия жара 38.0 °C
+            const y38 = yForTemp(38.0);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(padL, y38);
+            ctx.lineTo(W - padR, y38);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Метки времени X (-48ч, -24ч, сейчас)
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#94a3b8';
+            [
+                { h: 48, label: '-48ч' },
+                { h: 36, label: '-36ч' },
+                { h: 24, label: '-24ч' },
+                { h: 12, label: '-12ч' },
+                { h: 0,  label: 'сейчас' }
+            ].forEach(tick => {
+                const x = xForHours(tick.h);
+                ctx.fillText(tick.label, x, H - 6);
+            });
+
+            const pts = [...child.points48h].sort((a, b) => b.hours_ago - a.hours_ago);
+            if (pts.length === 0) return;
+
+            // Линия графика температуры (плавный градиент)
+            ctx.strokeStyle = '#fb7185';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            pts.forEach((p, idx) => {
+                const x = xForHours(p.hours_ago);
+                const y = yForTemp(p.temp);
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Точки замера и алмазы лекарств
+            pts.forEach(p => {
+                const x = xForHours(p.hours_ago);
+                const y = yForTemp(p.temp);
+
+                // Ореол точки
+                ctx.fillStyle = '#131d2b';
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Точка температуры
+                ctx.fillStyle = p.temp >= 38.0 ? '#fb7185' : '#2dd4bf';
+                ctx.beginPath();
+                ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Отметка лекарства ◆
+                if (p.med) {
+                    const my = yForTemp(36.15);
+                    const r = 4.5;
+                    ctx.fillStyle = '#2dd4bf';
+                    ctx.beginPath();
+                    ctx.moveTo(x, my - r);
+                    ctx.lineTo(x + r, my);
+                    ctx.lineTo(x, my + r);
+                    ctx.lineTo(x - r, my);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            });
+        }
+
+        // ==========================================
+        // БЫСТРЫЕ ДЕЙСТВИЯ И ДНЕВНИК
+        // ==========================================
+        function setQuickTemp(val) {
+            document.getElementById('inputTemp').value = val;
+        }
+
+        async function handleDiarySubmit(e) {
+            e.preventDefault();
+            const child = getActiveChild();
+            if (!child) return;
+
+            const tVal = parseFloat(document.getElementById('inputTemp').value) || 37.0;
+            const drink = document.getElementById('inputDrink').value.trim() || null;
+            const med = document.getElementById('inputMed').value.trim() || null;
+            const note = document.getElementById('inputNote').value.trim() || "Замер";
+
+            // Сдвигаем старые точки на 2 часа назад
+            child.points48h.forEach(p => { p.hours_ago = Math.min(48, (p.hours_ago || 0) + 2); });
+
+            const newPoint = {
+                id: "p_" + Date.now(),
+                temp: tVal,
+                drink: drink,
+                med: med,
+                note: note,
+                hours_ago: 0,
+                timestamp: "Только что"
+            };
+
+            child.points48h.push(newPoint);
+            saveLocalState();
+
+            // Синхронизация с Rust API в фоне
+            if (authToken && !child.id.startsWith("c_")) {
+                fetch(`/api/children/${child.id}/entries`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ temp: tVal, drink, med, note })
+                }).catch(() => {});
+            }
+
+            e.target.reset();
+            renderApp();
+        }
+
+        function deleteDiaryPoint(idx) {
+            const child = getActiveChild();
+            if (!child) return;
+            const entry = child.points48h[idx];
+            child.points48h.splice(idx, 1);
+            saveLocalState();
+
+            if (authToken && entry && entry.id && !entry.id.startsWith("p_")) {
+                fetch(`/api/children/${child.id}/entries/${entry.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                }).catch(() => {});
+            }
+
+            renderApp();
+        }
+
+        // ==========================================
+        // НАПОМИНАНИЯ
+        // ==========================================
+        function openAddReminderModal() { document.getElementById('reminderModal').classList.remove('hidden'); }
+        function closeAddReminderModal() { document.getElementById('reminderModal').classList.add('hidden'); }
+
+        function handleSaveReminder(e) {
+            e.preventDefault();
+            const child = getActiveChild();
+            if (!child) return;
+
+            const title = document.getElementById('newRemTitle').value.trim();
+            const time = document.getElementById('newRemTime').value.trim();
+            if (!title) return;
+
+            const newRem = {
+                id: "r_" + Date.now(),
+                title,
+                time,
+                done: false
+            };
+
+            child.reminders.unshift(newRem);
+            saveLocalState();
+
+            if (authToken && !child.id.startsWith("c_")) {
+                fetch(`/api/children/${child.id}/reminders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ title, time })
+                }).catch(() => {});
+            }
+
+            closeAddReminderModal();
+            e.target.reset();
+            renderApp();
+        }
+
+        function toggleReminder(idx) {
+            const child = getActiveChild();
+            if (!child) return;
+            const rem = child.reminders[idx];
+            rem.done = !rem.done;
+            saveLocalState();
+
+            if (authToken && rem && rem.id && !rem.id.startsWith("r_")) {
+                fetch(`/api/children/${child.id}/reminders/${rem.id}/toggle`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                }).catch(() => {});
+            }
+
+            renderApp();
+        }
+
+        function deleteReminder(idx) {
+            const child = getActiveChild();
+            if (!child) return;
+            const rem = child.reminders[idx];
+            child.reminders.splice(idx, 1);
+            saveLocalState();
+
+            if (authToken && rem && rem.id && !rem.id.startsWith("r_")) {
+                fetch(`/api/children/${child.id}/reminders/${rem.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                }).catch(() => {});
+            }
+
+            renderApp();
+        }
+
+        // ==========================================
+        // УПРАВЛЕНИЕ ДЕТЬМИ
+        // ==========================================
+        function toggleChildrenDropdown() {
+            document.getElementById('childrenDropdown').classList.toggle('hidden');
+        }
+
+        function openChildModal() { document.getElementById('childModal').classList.remove('hidden'); }
+        function closeChildModal() { document.getElementById('childModal').classList.add('hidden'); }
+
+        async function handleCreateChild(e) {
+            e.preventDefault();
+            const name = document.getElementById('newChildName').value.trim();
+            const age = parseInt(document.getElementById('newChildAge').value, 10) || 5;
+            const weight = parseFloat(document.getElementById('newChildWeight').value) || 18;
+            const episode = document.getElementById('newChildEpisode').value.trim() || "Начало наблюдения";
+
+            const newChild = {
+                id: "c_" + Date.now(),
+                name,
+                age,
+                weight,
+                episode,
+                points48h: [
+                    { id: "p_init", temp: 36.6, drink: "150 мл", med: null, note: "Профиль создан. Начало ведения дневника.", hours_ago: 0, timestamp: "Только что" }
+                ],
+                reminders: [
+                    { id: "r_init", title: "Контроль температуры и питьевой режим", time: "Каждые 3 часа", done: false }
+                ]
+            };
+
+            // Синхронизация с Rust API
+            if (authToken) {
+                try {
+                    const res = await fetch('/api/children', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ name, age, weight, episode })
+                    });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.success && json.data) {
+                            newChild.id = json.data.id;
+                        }
+                    }
+                } catch (err) {}
+            }
+
+            children.push(newChild);
+            currentChildIdx = children.length - 1;
+            saveLocalState();
+
+            closeChildModal();
+            e.target.reset();
+            renderApp();
+        }
+
+        function deleteChildProfile(idx, ev) {
+            if (ev) ev.stopPropagation();
+            const c = children[idx];
+            if (!confirm(`Удалить профиль ребёнка "${c.name}" и все записи?`)) return;
+
+            const childId = c.id;
+            children.splice(idx, 1);
+            if (currentChildIdx >= children.length) currentChildIdx = Math.max(0, children.length - 1);
+            saveLocalState();
+
+            if (authToken && childId && !childId.startsWith("c_")) {
+                fetch(`/api/children/${childId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                }).catch(() => {});
+            }
+
+            renderApp();
+        }
+
+        // ==========================================
+        // АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ
+        // ==========================================
+        function openAuthModal() {
+            if (currentUser) {
+                if (confirm(`Вы вошли как ${currentUser.name} (@${currentUser.username}). Выйти из аккаунта?`)) {
+                    handleLogout();
+                }
+                return;
+            }
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function setAuthTab(tab) {
+            const isLogin = tab === 'login';
+            document.getElementById('authTabLogin').className = isLogin ? 'flex-1 py-2 text-center border-b-2 border-teal-400 ps-accent font-semibold' : 'flex-1 py-2 text-center border-b-2 border-transparent ps-muted font-semibold';
+            document.getElementById('authTabRegister').className = !isLogin ? 'flex-1 py-2 text-center border-b-2 border-teal-400 ps-accent font-semibold' : 'flex-1 py-2 text-center border-b-2 border-transparent ps-muted font-semibold';
+            document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+            document.getElementById('registerForm').classList.toggle('hidden', isLogin);
+            document.getElementById('authModalTitle').innerText = isLogin ? "Вход в аккаунт" : "Регистрация";
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const json = await res.json();
+                if (res.ok && json.success) {
+                    authToken = json.data.token;
+                    currentUser = json.data.user;
+                    if (json.data.children && json.data.children.length > 0) {
+                        children = json.data.children;
+                    }
+                    localStorage.setItem('ps_token', authToken);
+                    localStorage.setItem('ps_user', JSON.stringify(currentUser));
+                    saveLocalState();
+                    closeAuthModal();
+                    renderApp();
+                    alert(`Добро пожаловать, ${currentUser.name}!`);
+                    return;
+                } else {
+                    alert(json.message || "Ошибка авторизации");
+                }
+            } catch (err) {
+                // Если нет бэкенда (оффлайн демо):
+                currentUser = { id: "local_u", username, name: username, theme: currentTheme };
+                authToken = "local_demo_token";
+                localStorage.setItem('ps_token', authToken);
+                localStorage.setItem('ps_user', JSON.stringify(currentUser));
+                closeAuthModal();
+                renderApp();
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, username, password })
+                });
+                const json = await res.json();
+                if (res.ok && json.success) {
+                    authToken = json.data.token;
+                    currentUser = json.data.user;
+                    if (json.data.children && json.data.children.length > 0) {
+                        children = json.data.children;
+                    }
+                    localStorage.setItem('ps_token', authToken);
+                    localStorage.setItem('ps_user', JSON.stringify(currentUser));
+                    saveLocalState();
+                    closeAuthModal();
+                    renderApp();
+                    alert(`Аккаунт успешно создан! Добро пожаловать, ${name}.`);
+                    return;
+                } else {
+                    alert(json.message || "Ошибка регистрации");
+                }
+            } catch (err) {
+                // Оффлайн фоллбэк
+                currentUser = { id: "local_u", username, name, theme: currentTheme };
+                authToken = "local_demo_token";
+                localStorage.setItem('ps_token', authToken);
+                localStorage.setItem('ps_user', JSON.stringify(currentUser));
+                closeAuthModal();
+                renderApp();
+            }
+        }
+
+        function handleGuestDemo() {
+            currentUser = { id: "demo_guest", username: "guest", name: "Родитель (Демо)" };
+            authToken = "demo_token";
+            localStorage.setItem('ps_token', authToken);
+            localStorage.setItem('ps_user', JSON.stringify(currentUser));
+            closeAuthModal();
+            renderApp();
+        }
+
+        function handleLogout() {
+            if (authToken) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                }).catch(() => {});
+            }
+            currentUser = null;
+            authToken = null;
+            localStorage.removeItem('ps_token');
+            localStorage.removeItem('ps_user');
+            renderApp();
+        }
+
+        function updateAuthBadge() {
+            const authLabel = document.getElementById('authLabel');
+            if (currentUser) {
+                authLabel.innerText = currentUser.name.split(' ')[0];
+                document.getElementById('authIcon').innerText = '🟢';
+            } else {
+                authLabel.innerText = "Войти";
+                document.getElementById('authIcon').innerText = '👤';
+            }
+        }
+
+        // ==========================================
+        // ТЕМЫ ОФОРМЛЕНИЯ
+        // ==========================================
+        function toggleThemeMenu() {
+            document.getElementById('themeMenu').classList.toggle('hidden');
+        }
+
+        function setTheme(themeName, persist = true) {
+            currentTheme = themeName;
+            const shell = document.getElementById('appShell');
+            shell.classList.remove('theme-dark', 'theme-light', 'theme-mint', 'theme-warm');
+            shell.classList.add(`theme-${themeName}`);
+
+            if (persist) {
+                localStorage.setItem('ps_theme', themeName);
+                const menu = document.getElementById('themeMenu');
+                if (menu) menu.classList.add('hidden');
+
+                if (authToken) {
+                    fetch('/api/user/theme', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ theme: themeName })
+                    }).catch(() => {});
+                }
+            }
+        }
+
+        // ==========================================
+        // ОТЧЁТЫ QR И PDF ДЛЯ ВРАЧА
+        // ==========================================
+        function openQrModal() {
+            const child = getActiveChild();
+            if (!child) return;
+
+            const temps = child.points48h.map(p => p.temp);
+            const peak = temps.length ? Math.max(...temps) : 36.6;
+            const lastMed = [...child.points48h].reverse().find(p => p.med);
+
+            const payload = `PediaSense Отчёт | Пациент: ${child.name}, ${child.age} лет, ${child.weight} кг | Эпизод: ${child.episode} | Макс за 48ч: ${peak.toFixed(1)}°C | Посл. лекарство: ${lastMed ? lastMed.med : 'Нет'}`;
+
+            let hash = 0;
+            for (let i = 0; i < payload.length; i++) hash = ((hash << 5) - hash) + payload.charCodeAt(i);
+            const hex = Math.abs(hash).toString(16).toUpperCase().slice(0, 5);
+
+            new QRious({
+                element: document.getElementById('qrCanvas'),
+                value: payload,
+                size: 160,
+                level: 'M',
+                background: '#ffffff',
+                foreground: '#0b111a'
+            });
+
+            document.getElementById('qrReportCode').innerText = `ОТЧЁТ #PS-${hex}`;
+            document.getElementById('qrPatient').innerText = `${child.name}, ${child.age} лет, ${child.weight} кг`;
+            document.getElementById('qrPeak').innerText = `${peak.toFixed(1)} °C`;
+            document.getElementById('qrMed').innerText = lastMed ? lastMed.med : 'Не указано';
+
+            document.getElementById('qrModal').classList.remove('hidden');
+        }
+
+        function closeQrModal() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+
+        function downloadPdfReport() {
+            if (!window.jspdf) {
+                alert("Библиотека создания PDF загружается, повторите попытку через секунду");
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const child = getActiveChild();
+            if (!child) return;
+
+            const temps = child.points48h.map(p => p.temp);
+            const peak = temps.length ? Math.max(...temps) : 36.6;
+            const minT = temps.length ? Math.min(...temps) : 36.6;
+            const avgT = temps.length ? (temps.reduce((a, b) => a + b, 0) / temps.length) : 36.6;
+
+            // Шапка PDF
+            doc.setFillColor(19, 29, 43);
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(79, 209, 181);
+            doc.setFontSize(16);
+            doc.text("PediaSense — 48-часовой клинический отчёт", 14, 15);
+            doc.setTextColor(241, 245, 249);
+            doc.setFontSize(9);
+            doc.text("Дневник болезни ребёнка для врача-педиатра. Без авторизации.", 14, 24);
+
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(13);
+            doc.text(`Пациент: ${child.name}, ${child.age} лет, ${child.weight} кг (${child.episode})`, 14, 44);
+
+            doc.setFontSize(10);
+            doc.text(`Пик (48 ч): ${peak.toFixed(1)} C   |   Средняя: ${avgT.toFixed(1)} C   |   Минимум: ${minT.toFixed(1)} C`, 14, 52);
+
+            let y = 68;
+            doc.setFontSize(11);
+            doc.text("ХРОНОЛОГИЯ ЗАМЕРОВ И ПРИЁМА ЛЕКАРСТВ (ЗА 48 ЧАСОВ):", 14, y);
+            y += 7;
+            doc.setFontSize(9);
+
+            [...child.points48h].reverse().forEach(p => {
+                if (y > 270) { doc.addPage(); y = 20; }
+                const tLabel = p.hours_ago === 0 ? "Сейчас" : `-${p.hours_ago} ч`;
+                const mLabel = p.med ? ` | Лекарство: ${p.med}` : "";
+                const dLabel = p.drink ? ` | Питьё: ${p.drink}` : "";
+                doc.text(`[${tLabel}]  ${p.temp.toFixed(1)} C${mLabel}${dLabel} — ${p.note}`, 14, y);
+                y += 6.5;
+            });
+
+            doc.save(`Отчет_PediaSense_${child.name}.pdf`);
+        }
+
+        // ==========================================
+        // SOS 112
+        // ==========================================
+        function openSosModal() {
+            const child = getActiveChild();
+            if (!child) return;
+            const temps = child.points48h.map(p => p.temp);
+            const peak = temps.length ? Math.max(...temps) : 36.6;
+            const med = [...child.points48h].reverse().find(p => p.med);
+
+            document.getElementById('sosDispatcherText').innerText =
+                `Ребёнок: ${child.name}, возраст ${child.age} лет, вес ${child.weight} кг. Эпизод: ${child.episode}. Максимальная температура: ${peak.toFixed(1)} °C. Последнее лекарство: ${med ? med.med : 'не давали'}.`;
+            document.getElementById('sosModal').classList.remove('hidden');
+        }
+
+        function closeSosModal() {
+            document.getElementById('sosModal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+        // ==========================================
+        function switchTab(tabId) {
+            ['diary', 'reminders', 'settings'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.remove('active');
+                const btn = document.getElementById(`nav-${t}`);
+                if (btn) {
+                    btn.classList.remove('ps-accent', 'font-bold');
+                    btn.classList.add('ps-muted', 'font-medium');
+                }
+            });
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('ps-muted', 'font-medium');
+                activeBtn.classList.add('ps-accent', 'font-bold');
+            }
+            if (tabId === 'diary') drawChart48h();
+        }
+
+        // Закрытие выпадающих меню при клике вне их
+        window.addEventListener('click', (e) => {
+            const drop = document.getElementById('childrenDropdown');
+            const childBtn = document.getElementById('childSelectorBtn');
+            if (drop && !drop.contains(e.target) && !childBtn.contains(e.target)) {
+                drop.classList.add('hidden');
+            }
+
+            const themeMenu = document.getElementById('themeMenu');
+            if (themeMenu && !themeMenu.contains(e.target) && !e.target.closest('button[title="Выбор темы оформления"]')) {
+                themeMenu.classList.add('hidden');
+            }
+        });
+
+        // Старт приложения
+        renderApp();
+        syncWithRustBackend();
+    </script>
+</body>
+</html>
