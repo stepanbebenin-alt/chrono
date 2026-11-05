@@ -14,7 +14,7 @@ const DB_FILE = path.join(__dirname, 'pediasense_data.json');
 const SALT = 'pediasense_clinical_salt_2026';
 
 // -------------------------------------------------------------
-// ХРАНИЛИЩЕ ДАННЫХ (АВТОМАТИЧЕСКОЕ СОХРАНЕНИЕ В JSON)
+// ХРАНИЛИЩЕ ДАННЫХ (ЧИСТАЯ БАЗА БЕЗ ПРИМЕРОВ)
 // -------------------------------------------------------------
 let db = {
     users: {},           // userId -> user
@@ -37,76 +37,19 @@ function loadDatabase() {
             return;
         }
     } catch (e) {
-        console.error('Ошибка чтения БД, создание новой:', e.message);
+        console.error('Ошибка чтения БД, создание новой чистой базы:', e.message);
     }
 
-    // Демо-данные по умолчанию
-    const demoUserId = 'u_demo_' + Date.now();
-    const demoUser = {
-        id: demoUserId,
-        username: 'demo',
-        name: 'Родитель (Демо)',
-        passwordHash: hashPassword('demo123'),
-        theme: 'dark',
-        createdAt: new Date().toISOString()
+    // Чистая база без примерных данных!
+    db = {
+        users: {},
+        usersByUsername: {},
+        sessions: {},
+        children: {},
+        childrenByUser: {}
     };
-
-    const child1Id = 'c_leo_' + Date.now();
-    const child1 = {
-        id: child1Id,
-        userId: demoUserId,
-        name: 'Лев',
-        age: 8,
-        weight: 26,
-        allergies: 'Нет',
-        doctorPhone: '+7 (999) 000-00-00',
-        episode: 'Кашель, 4-й день',
-        points48h: [
-            { id: 'p1', temp: 38.4, drink: '150 мл', med: 'Ибупрофен 10 мл', note: 'Вечерний подъём температуры, сухой кашель', hours_ago: 40, timestamp: '40 ч назад' },
-            { id: 'p2', temp: 37.8, drink: '200 мл', med: null, note: 'Спал спокойно после жаропонижающего', hours_ago: 30, timestamp: '30 ч назад' },
-            { id: 'p3', temp: 38.6, drink: '100 мл', med: null, note: 'Приступы кашля днём, слабость', hours_ago: 21, timestamp: '21 ч назад' },
-            { id: 'p4', temp: 39.1, drink: '120 мл', med: 'Ибупрофен 10 мл', note: 'Ночной пик 39.1 °C, дан Ибупрофен 10 мл', hours_ago: 12, timestamp: '12 ч назад' },
-            { id: 'p5', temp: 38.2, drink: '150 мл', med: null, note: 'Температура снизилась, отдыхает', hours_ago: 8, timestamp: '8 ч назад' },
-            { id: 'p6', temp: 38.2, drink: '180 мл', med: null, note: 'Утренний замер, кашель сохраняется', hours_ago: 3, timestamp: '3 ч назад' }
-        ],
-        reminders: [
-            { id: 'r1', title: 'Ибупрофен 10 мл (при t > 38.5 °C)', time: 'Каждые 6–8 часов', done: true },
-            { id: 'r2', title: 'Теплое питье / компот (150 мл)', time: 'Каждые 2 часа', done: false },
-            { id: 'r3', title: 'Визит педиатра с QR-отчётом', time: 'Сегодня в 16:30', done: false }
-        ],
-        createdAt: new Date().toISOString()
-    };
-
-    const child2Id = 'c_sofia_' + (Date.now() + 1);
-    const child2 = {
-        id: child2Id,
-        userId: demoUserId,
-        name: 'София',
-        age: 4,
-        weight: 16,
-        allergies: 'Аллергия на пенициллин',
-        doctorPhone: '',
-        episode: 'Температура, 2-й день',
-        points48h: [
-            { id: 's1', temp: 37.5, drink: '120 мл', med: null, note: 'Усталость после садика', hours_ago: 36, timestamp: '36 ч назад' },
-            { id: 's2', temp: 38.4, drink: '100 мл', med: 'Парацетамол 5 мл', note: 'Ночная температура', hours_ago: 24, timestamp: '24 ч назад' },
-            { id: 's3', temp: 37.7, drink: '150 мл', med: null, note: 'Играет, бодрая', hours_ago: 1, timestamp: '1 ч назад' }
-        ],
-        reminders: [
-            { id: 'r4', title: 'Парацетамол 5 мл (при необходимости)', time: 'Не чаще раза в 6 часов', done: true },
-            { id: 'r5', title: 'Вода мелкими глотками', time: 'Каждые 30 мин', done: false }
-        ],
-        createdAt: new Date().toISOString()
-    };
-
-    db.users[demoUserId] = demoUser;
-    db.usersByUsername['demo'] = demoUserId;
-    db.children[child1Id] = child1;
-    db.children[child2Id] = child2;
-    db.childrenByUser[demoUserId] = [child1Id, child2Id];
-
     saveDatabase();
-    console.log('✨ Создана начальная база с демо-данными (пользователь demo / demo123)');
+    console.log('✨ Инициализирована чистая база данных без примерных данных');
 }
 
 function saveDatabase() {
@@ -137,7 +80,7 @@ function parseJsonBody(req) {
         let body = '';
         req.on('data', chunk => {
             body += chunk;
-            if (body.length > 2 * 1024 * 1024) { // 2MB limit
+            if (body.length > 2 * 1024 * 1024) {
                 req.destroy();
                 reject(new Error('Payload too large'));
             }
@@ -211,40 +154,11 @@ const server = http.createServer(async (req, res) => {
                     createdAt: new Date().toISOString()
                 };
 
-                const childId = 'c_' + Date.now();
-                const defaultChild = {
-                    id: childId,
-                    userId,
-                    name: 'Мой ребёнок',
-                    age: 5,
-                    weight: 19,
-                    allergies: 'Нет',
-                    doctorPhone: '',
-                    episode: 'Начало наблюдения',
-                    points48h: [{
-                        id: 'p_' + Date.now(),
-                        temp: 36.8,
-                        drink: '150 мл',
-                        med: null,
-                        note: 'Профиль создан. Начните вести дневник.',
-                        hours_ago: 0,
-                        timestamp: 'Только что'
-                    }],
-                    reminders: [{
-                        id: 'r_' + Date.now(),
-                        title: 'Контроль температуры и питьевой режим',
-                        time: 'Каждые 3 часа',
-                        done: false
-                    }],
-                    createdAt: new Date().toISOString()
-                };
-
                 const token = 'ps_' + crypto.randomBytes(16).toString('hex');
                 db.users[userId] = user;
                 db.usersByUsername[username] = userId;
                 db.sessions[token] = userId;
-                db.children[childId] = defaultChild;
-                db.childrenByUser[userId] = [childId];
+                db.childrenByUser[userId] = []; // Начинаем БЕЗ детей — ребёнок создаётся вручную!
                 saveDatabase();
 
                 const safeUser = { ...user };
@@ -252,7 +166,7 @@ const server = http.createServer(async (req, res) => {
 
                 return sendJson(res, 200, {
                     success: true,
-                    data: { token, user: safeUser, children: [defaultChild] }
+                    data: { token, user: safeUser, children: [] }
                 });
             }
 
@@ -345,21 +259,8 @@ const server = http.createServer(async (req, res) => {
                     allergies: (body.allergies || 'Нет').trim(),
                     doctorPhone: (body.doctorPhone || '').trim(),
                     episode: (body.episode || 'Начало наблюдения').trim(),
-                    points48h: [{
-                        id: 'p_' + Date.now(),
-                        temp: 36.6,
-                        drink: '150 мл',
-                        med: null,
-                        note: 'Профиль создан. Начните вести дневник.',
-                        hours_ago: 0,
-                        timestamp: 'Только что'
-                    }],
-                    reminders: [{
-                        id: 'r_' + Date.now(),
-                        title: 'Контроль температуры',
-                        time: 'Каждые 3–4 часа',
-                        done: false
-                    }],
+                    points48h: [], // Чистая история замеров!
+                    reminders: [], // Чистый список напоминаний!
                     createdAt: new Date().toISOString()
                 };
 
