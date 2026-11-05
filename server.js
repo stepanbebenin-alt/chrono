@@ -1,7 +1,7 @@
 /**
  * PediaSense — Render & Local Web Server
  * Zero external dependencies: pure Node.js built-in modules (http, fs, path, crypto)
- * Runs instantly on Render, Windows, Linux, and macOS.
+ * Supports Family Multi-Access (Мама + Папа), Vaccination Calendar, WHO Percentiles, Real-time Sync
  */
 
 const http = require('http');
@@ -12,6 +12,33 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'pediasense_data.json');
 const SALT = 'pediasense_clinical_salt_2026';
+
+// -------------------------------------------------------------
+// ОФИЦИАЛЬНЫЙ НАЦИОНАЛЬНЫЙ КАЛЕНДАРЬ ПРИВИВОК (СПР / ВОЗ)
+// -------------------------------------------------------------
+function getDefaultVaccines() {
+    return [
+        { id: "v_hepb_1", name: "Гепатит В (1-я доза)", age: "В первые 24 часа", done: false, date: "" },
+        { id: "v_bcg", name: "БЦЖ-М (туберкулёз)", age: "3–7 дней жизни", done: false, date: "" },
+        { id: "v_hepb_2", name: "Гепатит В (2-я доза)", age: "1 месяц", done: false, date: "" },
+        { id: "v_pneumo_1", name: "Пневмококк (Превенар-13, 1-я)", age: "2 месяца", done: false, date: "" },
+        { id: "v_dpt_1", name: "АКДС / Пентаксим (1-я доза)", age: "3 месяца", done: false, date: "" },
+        { id: "v_polio_1", name: "Полиомиелит (1-я доза)", age: "3 месяца", done: false, date: "" },
+        { id: "v_dpt_2", name: "АКДС / Пентаксим (2-я доза)", age: "4.5 месяца", done: false, date: "" },
+        { id: "v_pneumo_2", name: "Пневмококк (2-я доза)", age: "4.5 месяца", done: false, date: "" },
+        { id: "v_polio_2", name: "Полиомиелит (2-я доза)", age: "4.5 месяца", done: false, date: "" },
+        { id: "v_dpt_3", name: "АКДС / Пентаксим (3-я доза)", age: "6 месяцев", done: false, date: "" },
+        { id: "v_hepb_3", name: "Гепатит В (3-я доза)", age: "6 месяцев", done: false, date: "" },
+        { id: "v_polio_3", name: "Полиомиелит (3-я доза)", age: "6 месяцев", done: false, date: "" },
+        { id: "v_mmr_1", name: "Корь, краснуха, паротит (ККП / Вактривир)", age: "12 месяцев", done: false, date: "" },
+        { id: "v_pneumo_rev", name: "Пневмококк (ревакцинация)", age: "15 месяцев", done: false, date: "" },
+        { id: "v_dpt_rev1", name: "АКДС / Пентаксим (1-я ревакцинация)", age: "18 месяцев", done: false, date: "" },
+        { id: "v_polio_rev1", name: "Полиомиелит (1-я ревакцинация)", age: "18 месяцев", done: false, date: "" },
+        { id: "v_polio_rev2", name: "Полиомиелит (капли ОПВ, 2-я ревакцинация)", age: "20 месяцев", done: false, date: "" },
+        { id: "v_mmr_rev", name: "Корь, краснуха, паротит (ревакцинация)", age: "6 лет", done: false, date: "" },
+        { id: "v_adsm", name: "АДС-М (дифтерия + столбняк)", age: "6–7 лет", done: false, date: "" }
+    ];
+}
 
 // -------------------------------------------------------------
 // ХРАНИЛИЩЕ ДАННЫХ (ЧИСТАЯ БАЗА БЕЗ ПРИМЕРОВ)
@@ -40,7 +67,6 @@ function loadDatabase() {
         console.error('Ошибка чтения БД, создание новой чистой базы:', e.message);
     }
 
-    // Чистая база без примерных данных!
     db = {
         users: {},
         usersByUsername: {},
@@ -61,6 +87,27 @@ function saveDatabase() {
 }
 
 loadDatabase();
+
+// -------------------------------------------------------------
+// ПРОВЕРКА ДОСТУПА К ПРОФИЛЮ (РОДИТЕЛЬ 1 И РОДИТЕЛЬ 2)
+// -------------------------------------------------------------
+function hasChildAccess(child, userId) {
+    if (!child || !userId) return false;
+    if (child.userId === userId) return true;
+    if (Array.isArray(child.familyMembers)) {
+        return child.familyMembers.some(m => (typeof m === 'string' ? m === userId : m.userId === userId));
+    }
+    return false;
+}
+
+function generateFamilyCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'FAM-';
+    for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
 
 // -------------------------------------------------------------
 // ХЕЛПЕРЫ ДЛЯ HTTP ЗАПРОСОВ
@@ -158,7 +205,7 @@ const server = http.createServer(async (req, res) => {
                 db.users[userId] = user;
                 db.usersByUsername[username] = userId;
                 db.sessions[token] = userId;
-                db.childrenByUser[userId] = []; // Начинаем БЕЗ детей — ребёнок создаётся вручную!
+                db.childrenByUser[userId] = [];
                 saveDatabase();
 
                 const safeUser = { ...user };
@@ -218,16 +265,16 @@ const server = http.createServer(async (req, res) => {
             if (!authUserId) {
                 return sendJson(res, 401, { success: false, message: 'Требуется авторизация' });
             }
+            const activeUser = db.users[authUserId];
 
-            // GET /api/me
+            // GET /api/me (Синхронизация профиля и всех детей семьи)
             if (pathname === '/api/me' && method === 'GET') {
-                const user = db.users[authUserId];
-                if (!user) return sendJson(res, 404, { success: false, message: 'Пользователь не найден' });
+                if (!activeUser) return sendJson(res, 404, { success: false, message: 'Пользователь не найден' });
 
                 const childIds = db.childrenByUser[authUserId] || [];
                 const userChildren = childIds.map(cid => db.children[cid]).filter(Boolean);
 
-                const safeUser = { ...user };
+                const safeUser = { ...activeUser };
                 delete safeUser.passwordHash;
                 return sendJson(res, 200, { success: true, data: { user: safeUser, children: userChildren } });
             }
@@ -243,24 +290,32 @@ const server = http.createServer(async (req, res) => {
                 return sendJson(res, 200, { success: true, data: theme });
             }
 
-            // POST /api/children
+            // POST /api/children (Создание нового профиля ребёнка)
             if (pathname === '/api/children' && method === 'POST') {
                 const body = await parseJsonBody(req);
                 const name = (body.name || '').trim();
                 if (!name) return sendJson(res, 400, { success: false, message: 'Имя обязательно' });
 
                 const childId = 'c_' + Date.now();
+                const familyCode = generateFamilyCode();
+
                 const newChild = {
                     id: childId,
                     userId: authUserId,
+                    familyCode: familyCode,
+                    familyMembers: [
+                        { userId: authUserId, name: activeUser.name, role: 'Создатель профиля' }
+                    ],
                     name,
                     age: parseInt(body.age, 10) || 5,
                     weight: parseFloat(body.weight) || 18,
+                    height: parseFloat(body.height) || 110,
                     allergies: (body.allergies || 'Нет').trim(),
                     doctorPhone: (body.doctorPhone || '').trim(),
                     episode: (body.episode || 'Начало наблюдения').trim(),
-                    points48h: [], // Чистая история замеров!
-                    reminders: [], // Чистый список напоминаний!
+                    points48h: [], // Чистая история замеров
+                    reminders: [], // Напоминания
+                    vaccines: getDefaultVaccines(), // Календарь прививок
                     createdAt: new Date().toISOString()
                 };
 
@@ -272,30 +327,72 @@ const server = http.createServer(async (req, res) => {
                 return sendJson(res, 200, { success: true, data: newChild });
             }
 
+            // POST /api/family/join (Семейный мульти-доступ: Мама + Папа)
+            if (pathname === '/api/family/join' && method === 'POST') {
+                const body = await parseJsonBody(req);
+                const inputCode = (body.code || '').trim().toUpperCase();
+
+                if (!inputCode) {
+                    return sendJson(res, 400, { success: false, message: 'Введите код семейного доступа' });
+                }
+
+                // Ищем ребёнка с таким familyCode
+                const matchedChild = Object.values(db.children).find(c => (c.familyCode || '').toUpperCase() === inputCode);
+
+                if (!matchedChild) {
+                    return sendJson(res, 404, { success: false, message: 'Семейный код не найден. Проверьте правильность (например FAM-7X9K)' });
+                }
+
+                // Добавляем текущего пользователя в семейный доступ к ребёнку
+                matchedChild.familyMembers = matchedChild.familyMembers || [];
+                const alreadyMember = matchedChild.familyMembers.some(m => (typeof m === 'string' ? m === authUserId : m.userId === authUserId));
+
+                if (!alreadyMember) {
+                    matchedChild.familyMembers.push({
+                        userId: authUserId,
+                        name: activeUser.name,
+                        role: 'Второй родитель'
+                    });
+                }
+
+                db.childrenByUser[authUserId] = db.childrenByUser[authUserId] || [];
+                if (!db.childrenByUser[authUserId].includes(matchedChild.id)) {
+                    db.childrenByUser[authUserId].push(matchedChild.id);
+                }
+
+                saveDatabase();
+
+                return sendJson(res, 200, {
+                    success: true,
+                    message: `Семейный доступ подключен! Профиль "${matchedChild.name}" теперь синхронизируется между родителями.`,
+                    data: matchedChild
+                });
+            }
+
             // DELETE /api/children/:id
             const childDelMatch = pathname.match(/^\/api\/children\/([^/]+)$/);
             if (childDelMatch && method === 'DELETE') {
                 const childId = childDelMatch[1];
                 const child = db.children[childId];
-                if (!child || child.userId !== authUserId) {
-                    return sendJson(res, 404, { success: false, message: 'Профиль не найден' });
+                if (!child || !hasChildAccess(child, authUserId)) {
+                    return sendJson(res, 404, { success: false, message: 'Профиль не найден или нет доступа' });
                 }
 
                 delete db.children[childId];
-                if (db.childrenByUser[authUserId]) {
-                    db.childrenByUser[authUserId] = db.childrenByUser[authUserId].filter(id => id !== childId);
-                }
+                Object.keys(db.childrenByUser).forEach(uid => {
+                    db.childrenByUser[uid] = db.childrenByUser[uid].filter(id => id !== childId);
+                });
                 saveDatabase();
                 return sendJson(res, 200, { success: true, message: 'Профиль удален' });
             }
 
-            // POST /api/children/:id/entries
+            // POST /api/children/:id/entries (Добавление замера температуры с автором)
             const entryAddMatch = pathname.match(/^\/api\/children\/([^/]+)\/entries$/);
             if (entryAddMatch && method === 'POST') {
                 const childId = entryAddMatch[1];
                 const child = db.children[childId];
-                if (!child || child.userId !== authUserId) {
-                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
+                if (!child || !hasChildAccess(child, authUserId)) {
+                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден или нет доступа' });
                 }
 
                 const body = await parseJsonBody(req);
@@ -309,6 +406,7 @@ const server = http.createServer(async (req, res) => {
                     drink: body.drink ? body.drink.trim() : null,
                     med: body.med ? body.med.trim() : null,
                     note: (body.note || 'Замер').trim(),
+                    author: activeUser.name || 'Родитель',
                     hours_ago: 0,
                     timestamp: 'Только что'
                 };
@@ -324,7 +422,7 @@ const server = http.createServer(async (req, res) => {
             if (entryDelMatch && method === 'DELETE') {
                 const [, childId, entryId] = entryDelMatch;
                 const child = db.children[childId];
-                if (!child || child.userId !== authUserId) {
+                if (!child || !hasChildAccess(child, authUserId)) {
                     return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
                 }
 
@@ -338,7 +436,7 @@ const server = http.createServer(async (req, res) => {
             if (remAddMatch && method === 'POST') {
                 const childId = remAddMatch[1];
                 const child = db.children[childId];
-                if (!child || child.userId !== authUserId) {
+                if (!child || !hasChildAccess(child, authUserId)) {
                     return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
                 }
 
@@ -347,6 +445,7 @@ const server = http.createServer(async (req, res) => {
                     id: 'r_' + Date.now(),
                     title: (body.title || 'Напоминание').trim(),
                     time: (body.time || 'По расписанию').trim(),
+                    author: activeUser.name || 'Родитель',
                     done: false
                 };
 
@@ -360,7 +459,7 @@ const server = http.createServer(async (req, res) => {
             if (remToggleMatch && method === 'PUT') {
                 const [, childId, remId] = remToggleMatch;
                 const child = db.children[childId];
-                if (!child || child.userId !== authUserId) {
+                if (!child || !hasChildAccess(child, authUserId)) {
                     return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
                 }
 
@@ -377,13 +476,34 @@ const server = http.createServer(async (req, res) => {
             if (remDelMatch && method === 'DELETE') {
                 const [, childId, remId] = remDelMatch;
                 const child = db.children[childId];
-                if (!child || child.userId !== authUserId) {
+                if (!child || !hasChildAccess(child, authUserId)) {
                     return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
                 }
 
                 child.reminders = child.reminders.filter(r => r.id !== remId);
                 saveDatabase();
                 return sendJson(res, 200, { success: true, message: 'Напоминание удалено' });
+            }
+
+            // PUT /api/children/:id/vaccines/:vacId/toggle (Календарь прививок)
+            const vacToggleMatch = pathname.match(/^\/api\/children\/([^/]+)\/vaccines\/([^/]+)\/toggle$/);
+            if (vacToggleMatch && method === 'PUT') {
+                const [, childId, vacId] = vacToggleMatch;
+                const child = db.children[childId];
+                if (!child || !hasChildAccess(child, authUserId)) {
+                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
+                }
+
+                child.vaccines = child.vaccines || getDefaultVaccines();
+                const vac = child.vaccines.find(v => v.id === vacId);
+                if (!vac) return sendJson(res, 404, { success: false, message: 'Прививка не найдена' });
+
+                const body = await parseJsonBody(req);
+                vac.done = body.done !== undefined ? Boolean(body.done) : !vac.done;
+                vac.date = vac.done ? (body.date || new Date().toISOString().slice(0, 10)) : "";
+
+                saveDatabase();
+                return sendJson(res, 200, { success: true, data: vac });
             }
 
             return sendJson(res, 404, { success: false, message: 'API маршрут не найден' });
