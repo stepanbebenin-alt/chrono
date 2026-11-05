@@ -1,30 +1,39 @@
 # 🏥 PediaSense — Клинический дневник болезни ребёнка
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/stepanbebenin-alt/pediasense)
+
 Современное, лёгкое и быстрое приложение для контроля температуры, ведения дневника болезни ребёнка и формирования 48-часового отчёта для врача-педиатра.
 
 Готово к **мгновенному бесплатному развёртыванию на Render (render.com)**, а также к локальному запуску на **Node.js (JS)** или **Rust**!
 
 ---
 
-## 🚀 Развёртывание на Render (render.com)
+## 🚀 Развёртывание на Render в 1 клик
 
-Репозиторий содержит готовую конфигурацию `render.yaml` и `Dockerfile`.
+Просто нажмите кнопку выше **«Deploy to Render»** или выполните шаги:
 
-### Способ 1: Автоматический (через Blueprints)
-1. Зайдите в свой личный кабинет на [dashboard.render.com](https://dashboard.render.com/).
+1. Зайдите на **[dashboard.render.com](https://dashboard.render.com/)**.
 2. Нажмите **New +** → **Blueprint**.
-3. Выберите ваш репозиторий `pediasense`.
-4. Нажмите **Apply** — Render автоматически прочитает `render.yaml`, создаст бесплатный веб-сервис и выдаст постоянную ссылку `https://pediasense-xxxx.onrender.com` с бесплатным SSL-сертификатом!
+3. Выберите репозиторий `pediasense` (или укажите `https://github.com/stepanbebenin-alt/pediasense`).
+4. Нажмите **Apply** — Render прочитает `render.yaml`, создаст бесплатный веб-сервис и выдаст постоянную ссылку `https://pediasense.onrender.com` с SSL-сертификатом!
 
-### Способ 2: Вручную (Web Service)
-1. В панели Render нажмите **New +** → **Web Service**.
-2. Подключите репозиторий `pediasense`.
-3. Укажите параметры:
-   - **Runtime**: `Node`
-   - **Build Command**: `npm run build`
-   - **Start Command**: `npm start` (или `node server.js`)
-   - **Plan**: `Free`
-4. Нажмите **Create Web Service**. Сервер запустится за 30 секунд!
+Файл конфигурации `render.yaml`:
+```yaml
+services:
+  - type: web
+    name: pediasense
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.20.1
+      - key: PORT
+        value: 10000
+```
 
 ---
 
