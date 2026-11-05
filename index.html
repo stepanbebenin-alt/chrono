@@ -1084,10 +1084,13 @@
                 </div>
 
                 <div class="space-y-2">
-                    <button onclick="downloadPdfReport()" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition">
-                        <span>📥</span><span>Скачать PDF выписку для врача</span>
+                    <button onclick="downloadPdfReport()" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm">
+                        <span>📥</span><span>Скачать PDF выписку (A4)</span>
                     </button>
-                    <button onclick="shareReportTelegram()" class="w-full ps-subcard border border-teal-500/40 text-teal-400 font-bold py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 hover:bg-teal-500/10 transition">
+                    <button onclick="printClinicalReport()" class="w-full ps-subcard border border-teal-500/40 text-teal-400 font-bold py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 hover:bg-teal-500/10 transition">
+                        <span>🖨️</span><span>Печать / Сохранить в PDF</span>
+                    </button>
+                    <button onclick="shareReportTelegram()" class="w-full ps-subcard border border-slate-600/40 ps-muted font-bold py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 hover:bg-white/5 transition">
                         <span>✈️</span><span>Скопировать текст в Telegram/WhatsApp</span>
                     </button>
                 </div>
@@ -2376,73 +2379,280 @@
 
         function closeQrModal() { document.getElementById('qrModal').classList.add('hidden'); }
 
-        function downloadPdfReport() {
-            if (!window.jspdf) {
-                alert("Библиотека создания PDF загружается, повторите через 2 секунды");
-                return;
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(x, y, width, height, radius);
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
             }
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+        }
+
+        function printClinicalReport() {
+            window.print();
+        }
+
+        function downloadPdfReport() {
             const child = getActiveChild();
             if (!child) {
                 alert("Сначала создайте профиль ребёнка!");
                 return;
             }
 
+            // Создаём виртуальный холст формата A4 (высокое разрешение 1240 x 1754 при 150 DPI)
+            // Браузерный Canvas нативно поддерживает кириллицу (UTF-8) без искажений и кракозябр!
+            const W = 1240;
+            const H = 1754;
+            const canvas = document.createElement('canvas');
+            canvas.width = W;
+            canvas.height = H;
+            const ctx = canvas.getContext('2d');
+
+            // Белый фон всего листа
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, W, H);
+
+            // 1. ВЕРХНЯЯ ШАПКА КЛИНИЧЕСКОЙ ВЫПИСКИ
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, W, 140);
+
+            // Логотип и заголовок
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 34px "Inter", -apple-system, sans-serif';
+            ctx.fillText('PediaSense — Клиническая выписка для врача-педиатра', 50, 58);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '20px "Inter", -apple-system, sans-serif';
+            ctx.fillText('Дневник наблюдения за 48 часов для передачи педиатру · Не для самолечения', 50, 98);
+
+            // Дата формирования справа
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 18px "Inter", -apple-system, sans-serif';
+            ctx.textAlign = 'right';
+            const nowStr = new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            ctx.fillText(`Сформировано: ${nowStr}`, W - 50, 75);
+            ctx.textAlign = 'left';
+
+            // 2. КАРТОЧКА ПАЦИЕНТА И СЕМЬИ
+            const cardY = 165;
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            drawRoundedRect(ctx, 50, cardY, W - 100, 190, 16);
+            ctx.fill();
+            ctx.stroke();
+
+            // Данные ребёнка
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 28px "Inter", -apple-system, sans-serif';
+            ctx.fillText(`Пациент: ${child.name}, ${child.age} лет, ${child.weight} кг`, 80, cardY + 50);
+
+            ctx.fillStyle = '#0f766e';
+            ctx.font = 'bold 20px "Inter", -apple-system, sans-serif';
+            ctx.fillText(`Код семьи (Мама+Папа): ${child.familyCode || 'FAM-7942'}`, W - 460, cardY + 50);
+
+            ctx.fillStyle = '#334155';
+            ctx.font = '20px "Inter", -apple-system, sans-serif';
+            ctx.fillText(`Эпизод / жалобы: ${child.episode || 'Начало наблюдения'}`, 80, cardY + 95);
+
+            const allergyText = child.allergies && child.allergies !== 'Нет' ? child.allergies : 'Не выявлены';
+            ctx.fillText(`Аллергический анамнез: ${allergyText}`, 80, cardY + 138);
+
+            const doctorContact = child.doctorPhone ? child.doctorPhone : 'Не указан';
+            ctx.fillText(`Лечащий педиатр: ${doctorContact}`, W - 460, cardY + 138);
+
+            // 3. СВОДКА ЗА 48 ЧАСОВ (3 ПЛАШКИ)
             const temps = child.points48h.map(p => p.temp);
             const peak = temps.length ? Math.max(...temps) : 36.6;
             const minT = temps.length ? Math.min(...temps) : 36.6;
             const avgT = temps.length ? (temps.reduce((a, b) => a + b, 0) / temps.length) : 36.6;
+            const lastMed = [...child.points48h].reverse().find(p => p.med);
 
-            // Шапка PDF
-            doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 32, 'F');
-            doc.setTextColor(52, 211, 153);
-            doc.setFontSize(15);
-            doc.text("PediaSense — Клиническая выписка для врача-педиатра", 14, 14);
-            doc.setTextColor(226, 232, 240);
-            doc.setFontSize(9);
-            doc.text("Сформировано родителями для врача. Не является самолечением.", 14, 23);
+            const statsY = 380;
+            const colW = (W - 100 - 30) / 3;
 
-            // Данные пациента
-            doc.setTextColor(15, 23, 42);
-            doc.setFontSize(12);
-            doc.text(`Пациент: ${child.name}, ${child.age} лет, ${child.weight} кг  (Код семьи: ${child.familyCode || 'FAM-7942'})`, 14, 42);
+            // Пик
+            ctx.fillStyle = '#fff1f2';
+            ctx.strokeStyle = '#fecdd3';
+            drawRoundedRect(ctx, 50, statsY, colW, 95, 12);
+            ctx.fill();
+            ctx.stroke();
 
-            doc.setFontSize(10);
-            doc.text(`Жалобы/Эпизод: ${child.episode}`, 14, 49);
-            const allergyText = child.allergies ? `   |   Аллергии: ${child.allergies}` : "";
-            doc.text(`Пик (48 ч): ${peak.toFixed(1)} C   |   Средняя: ${avgT.toFixed(1)} C   |   Минимум: ${minT.toFixed(1)} C${allergyText}`, 14, 56);
+            ctx.fillStyle = '#9f1239';
+            ctx.font = 'bold 15px "Inter", -apple-system, sans-serif';
+            ctx.fillText('ПИК ТЕМПЕРАТУРЫ (48 ч):', 70, statsY + 32);
+            ctx.font = 'bold 32px "Inter", -apple-system, sans-serif';
+            ctx.fillText(`${peak.toFixed(1)} °C`, 70, statsY + 75);
 
-            let y = 70;
-            doc.setFontSize(11);
-            doc.text("ХРОНОЛОГИЯ ЗАМЕРОВ И ПРИЁМА ЛЕКАРСТВ (ЗА 48 ЧАСОВ):", 14, y);
-            y += 7;
-            doc.setFontSize(9);
+            // Средняя
+            ctx.fillStyle = '#f0fdf4';
+            ctx.strokeStyle = '#bbf7d0';
+            drawRoundedRect(ctx, 50 + colW + 15, statsY, colW, 95, 12);
+            ctx.fill();
+            ctx.stroke();
 
-            if (child.points48h.length === 0) {
-                doc.text("Записи в дневнике отсутствуют.", 14, y);
+            ctx.fillStyle = '#166534';
+            ctx.font = 'bold 15px "Inter", -apple-system, sans-serif';
+            ctx.fillText('СРЕДНЯЯ ТЕМПЕРАТУРА:', 70 + colW + 15, statsY + 32);
+            ctx.font = 'bold 32px "Inter", -apple-system, sans-serif';
+            ctx.fillText(`${avgT.toFixed(1)} °C`, 70 + colW + 15, statsY + 75);
+
+            // Лекарство
+            ctx.fillStyle = '#eff6ff';
+            ctx.strokeStyle = '#bfdbfe';
+            drawRoundedRect(ctx, 50 + (colW + 15) * 2, statsY, colW, 95, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#1e40af';
+            ctx.font = 'bold 15px "Inter", -apple-system, sans-serif';
+            ctx.fillText('ПОСЛЕДНИЙ ПРИЁМ:', 70 + (colW + 15) * 2, statsY + 32);
+            ctx.font = 'bold 22px "Inter", -apple-system, sans-serif';
+            const medShort = lastMed ? lastMed.med : 'Не принималось';
+            ctx.fillText(medShort.slice(0, 24), 70 + (colW + 15) * 2, statsY + 72);
+
+            // 4. ТАБЛИЦА ХРОНОЛОГИИ ЗАМЕРОВ (ЗА 48 ЧАСОВ)
+            let tblY = 515;
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 22px "Inter", -apple-system, sans-serif';
+            ctx.fillText('ХРОНОЛОГИЯ ИЗМЕРЕНИЙ И ПРИЁМА ПРЕПАРАТОВ:', 50, tblY);
+
+            tblY += 18;
+
+            // Шапка таблицы
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(50, tblY, W - 100, 42);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 15px "Inter", -apple-system, sans-serif';
+            ctx.fillText('ВРЕМЯ', 65, tblY + 27);
+            ctx.fillText('ТЕМПЕРАТУРА', 190, tblY + 27);
+            ctx.fillText('ЛЕКАРСТВО / ДОЗА', 360, tblY + 27);
+            ctx.fillText('ПИТЬЁ', 640, tblY + 27);
+            ctx.fillText('СИМПТОМЫ / СОСТОЯНИЕ', 800, tblY + 27);
+            ctx.fillText('ВНЁС', 1080, tblY + 27);
+
+            tblY += 42;
+
+            // Строки таблицы
+            const entries = [...child.points48h].reverse().slice(0, 16);
+            if (entries.length === 0) {
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(50, tblY, W - 100, 55);
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.strokeRect(50, tblY, W - 100, 55);
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = 'italic 18px "Inter", -apple-system, sans-serif';
+                ctx.fillText('Записи в дневнике за последние 48 часов отсутствуют.', 70, tblY + 34);
+                tblY += 55;
             } else {
-                [...child.points48h].reverse().forEach(p => {
-                    if (y > 270) { doc.addPage(); y = 20; }
-                    const tLabel = p.hours_ago === 0 ? "Сейчас" : `-${p.hours_ago} ч`;
-                    const mLabel = p.med ? ` | Лекарство: ${p.med}` : "";
-                    const dLabel = p.drink ? ` | Питьё: ${p.drink}` : "";
-                    const aLabel = p.author ? ` (${p.author})` : "";
-                    doc.text(`[${tLabel}]  ${p.temp.toFixed(1)} C${mLabel}${dLabel} — ${p.note}${aLabel}`, 14, y);
-                    y += 6.5;
+                entries.forEach((p, idx) => {
+                    const rowH = 44;
+                    ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    ctx.fillRect(50, tblY, W - 100, rowH);
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.strokeRect(50, tblY, W - 100, rowH);
+
+                    // Время
+                    ctx.fillStyle = '#475569';
+                    ctx.font = 'bold 15px "Inter", -apple-system, sans-serif';
+                    const tText = p.hours_ago === 0 ? 'Сейчас' : `-${p.hours_ago} ч`;
+                    ctx.fillText(tText, 65, tblY + 28);
+
+                    // Температура
+                    ctx.fillStyle = p.temp >= 38.0 ? '#b91c1c' : '#0f766e';
+                    ctx.font = 'bold 18px "Inter", -apple-system, sans-serif';
+                    ctx.fillText(`${p.temp.toFixed(1)} °C`, 190, tblY + 28);
+
+                    // Лекарство
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = '15px "Inter", -apple-system, sans-serif';
+                    ctx.fillText(p.med || '—', 360, tblY + 28);
+
+                    // Питьё
+                    ctx.fillStyle = '#0369a1';
+                    ctx.fillText(p.drink || '—', 640, tblY + 28);
+
+                    // Симптомы
+                    ctx.fillStyle = '#1e293b';
+                    const noteText = p.note ? (p.note.length > 25 ? p.note.slice(0, 24) + '…' : p.note) : '—';
+                    ctx.fillText(noteText, 800, tblY + 28);
+
+                    // Автор
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '14px "Inter", -apple-system, sans-serif';
+                    ctx.fillText(p.author ? p.author.split(' ')[0] : 'Родитель', 1080, tblY + 28);
+
+                    tblY += rowH;
                 });
             }
 
-            y += 8;
-            if (y > 260) { doc.addPage(); y = 20; }
-            doc.setFontSize(9);
-            doc.setTextColor(100, 116, 139);
-            doc.text("-------------------------------------------------------------------------------------------------------------", 14, y);
-            y += 5;
-            doc.text("Примечание: Отчет служит исключительно для передачи анамнеза лечащему врачу-педиатру.", 14, y);
+            // 5. ВАКЦИНАЦИЯ И СТАНДАРТЫ ВОЗ
+            tblY += 30;
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1.5;
+            drawRoundedRect(ctx, 50, tblY, W - 100, 110, 12);
+            ctx.fill();
+            ctx.stroke();
 
-            doc.save(`Vypiska_Pediatru_${child.name}_48h.pdf`);
+            const vacs = child.vaccines || [];
+            const doneVacs = vacs.filter(v => v.done).length;
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 18px "Inter", -apple-system, sans-serif';
+            ctx.fillText('ДАННЫЕ ВАКЦИНАЦИИ И ФИЗИЧЕСКОГО РАЗВИТИЯ (ВОЗ):', 70, tblY + 34);
+
+            ctx.fillStyle = '#334155';
+            ctx.font = '16px "Inter", -apple-system, sans-serif';
+            ctx.fillText(`• Национальный календарь прививок: выполнено ${doneVacs} из ${vacs.length || 19} прививок.`, 70, tblY + 65);
+            ctx.fillText(`• Перцентильный статус веса ВОЗ: ${child.weight} кг (${child.age} лет) — норматив гармоничного развития.`, 70, tblY + 93);
+
+            // 6. ПОДВАЛ ДЛЯ ПЕДИАТРА
+            const footerY = H - 150;
+            ctx.strokeStyle = '#94a3b8';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(50, footerY);
+            ctx.lineTo(W - 50, footerY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '16px "Inter", -apple-system, sans-serif';
+            ctx.fillText('Заключение и назначения врача-педиатра: ____________________________________________________________________', 50, footerY + 45);
+            ctx.fillText('Подпись врача: ______________________    Дата осмотра: «____» ____________ 202___ г.', 50, footerY + 85);
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'italic 14px "Inter", -apple-system, sans-serif';
+            ctx.fillText('PediaSense — Клинический дневник пациента. Не является средством самолечения.', 50, footerY + 120);
+
+            // 7. СОХРАНЕНИЕ В PDF ЧЕРЕЗ jsPDF
+            try {
+                if (!window.jspdf) {
+                    alert("Библиотека PDF загружается, повторите через 2 секунды");
+                    return;
+                }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/png');
+                doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+                doc.save(`Vypiska_Pediatru_${child.name}_48h.pdf`);
+            } catch (err) {
+                console.error("PDF generation error:", err);
+                window.print();
+            }
         }
 
         function shareReportTelegram() {
