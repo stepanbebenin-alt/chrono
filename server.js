@@ -13,32 +13,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'pediasense_data.json');
 const SALT = 'pediasense_clinical_salt_2026';
 
-// -------------------------------------------------------------
-// ОФИЦИАЛЬНЫЙ НАЦИОНАЛЬНЫЙ КАЛЕНДАРЬ ПРИВИВОК (СПР / ВОЗ)
-// -------------------------------------------------------------
-function getDefaultVaccines() {
-    return [
-        { id: "v_hepb_1", name: "Гепатит В (1-я доза)", age: "В первые 24 часа", done: false, date: "" },
-        { id: "v_bcg", name: "БЦЖ-М (туберкулёз)", age: "3–7 дней жизни", done: false, date: "" },
-        { id: "v_hepb_2", name: "Гепатит В (2-я доза)", age: "1 месяц", done: false, date: "" },
-        { id: "v_pneumo_1", name: "Пневмококк (Превенар-13, 1-я)", age: "2 месяца", done: false, date: "" },
-        { id: "v_dpt_1", name: "АКДС / Пентаксим (1-я доза)", age: "3 месяца", done: false, date: "" },
-        { id: "v_polio_1", name: "Полиомиелит (1-я доза)", age: "3 месяца", done: false, date: "" },
-        { id: "v_dpt_2", name: "АКДС / Пентаксим (2-я доза)", age: "4.5 месяца", done: false, date: "" },
-        { id: "v_pneumo_2", name: "Пневмококк (2-я доза)", age: "4.5 месяца", done: false, date: "" },
-        { id: "v_polio_2", name: "Полиомиелит (2-я доза)", age: "4.5 месяца", done: false, date: "" },
-        { id: "v_dpt_3", name: "АКДС / Пентаксим (3-я доза)", age: "6 месяцев", done: false, date: "" },
-        { id: "v_hepb_3", name: "Гепатит В (3-я доза)", age: "6 месяцев", done: false, date: "" },
-        { id: "v_polio_3", name: "Полиомиелит (3-я доза)", age: "6 месяцев", done: false, date: "" },
-        { id: "v_mmr_1", name: "Корь, краснуха, паротит (ККП / Вактривир)", age: "12 месяцев", done: false, date: "" },
-        { id: "v_pneumo_rev", name: "Пневмококк (ревакцинация)", age: "15 месяцев", done: false, date: "" },
-        { id: "v_dpt_rev1", name: "АКДС / Пентаксим (1-я ревакцинация)", age: "18 месяцев", done: false, date: "" },
-        { id: "v_polio_rev1", name: "Полиомиелит (1-я ревакцинация)", age: "18 месяцев", done: false, date: "" },
-        { id: "v_polio_rev2", name: "Полиомиелит (капли ОПВ, 2-я ревакцинация)", age: "20 месяцев", done: false, date: "" },
-        { id: "v_mmr_rev", name: "Корь, краснуха, паротит (ревакцинация)", age: "6 лет", done: false, date: "" },
-        { id: "v_adsm", name: "АДС-М (дифтерия + столбняк)", age: "6–7 лет", done: false, date: "" }
-    ];
-}
+
 
 // -------------------------------------------------------------
 // ХРАНИЛИЩЕ ДАННЫХ (ЧИСТАЯ БАЗА БЕЗ ПРИМЕРОВ)
@@ -315,7 +290,6 @@ const server = http.createServer(async (req, res) => {
                     episode: (body.episode || 'Начало наблюдения').trim(),
                     points48h: [], // Чистая история замеров
                     reminders: [], // Напоминания
-                    vaccines: getDefaultVaccines(), // Календарь прививок
                     createdAt: new Date().toISOString()
                 };
 
@@ -485,26 +459,7 @@ const server = http.createServer(async (req, res) => {
                 return sendJson(res, 200, { success: true, message: 'Напоминание удалено' });
             }
 
-            // PUT /api/children/:id/vaccines/:vacId/toggle (Календарь прививок)
-            const vacToggleMatch = pathname.match(/^\/api\/children\/([^/]+)\/vaccines\/([^/]+)\/toggle$/);
-            if (vacToggleMatch && method === 'PUT') {
-                const [, childId, vacId] = vacToggleMatch;
-                const child = db.children[childId];
-                if (!child || !hasChildAccess(child, authUserId)) {
-                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
-                }
 
-                child.vaccines = child.vaccines || getDefaultVaccines();
-                const vac = child.vaccines.find(v => v.id === vacId);
-                if (!vac) return sendJson(res, 404, { success: false, message: 'Прививка не найдена' });
-
-                const body = await parseJsonBody(req);
-                vac.done = body.done !== undefined ? Boolean(body.done) : !vac.done;
-                vac.date = vac.done ? (body.date || new Date().toISOString().slice(0, 10)) : "";
-
-                saveDatabase();
-                return sendJson(res, 200, { success: true, data: vac });
-            }
 
             return sendJson(res, 404, { success: false, message: 'API маршрут не найден' });
         } catch (err) {
