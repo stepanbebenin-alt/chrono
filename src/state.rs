@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::auth::hash_password;
 use crate::models::{Child, DiaryEntry, Reminder, User};
 
-const DB_FILE_PATH: &str = "pediasense_data.json";
+const DB_FILE_PATH: &str = "chrono_data.json";
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct PersistentData {
@@ -39,13 +39,13 @@ impl AppState {
         if Path::new(DB_FILE_PATH).exists() {
             if let Ok(content) = fs::read_to_string(DB_FILE_PATH) {
                 if let Ok(data) = serde_json::from_str::<PersistentData>(&content) {
-                    println!("📂 База данных успешно загружена из {}", DB_FILE_PATH);
+                    println!("📂 Database loaded successfully from {}", DB_FILE_PATH);
                     return data;
                 }
             }
         }
 
-        println!("✨ Создана новая база данных с демонстрационными данными");
+        println!("✨ Created a new database with demo data");
         Self::create_seed_data()
     }
 
@@ -62,7 +62,7 @@ impl AppState {
         let demo_user = User {
             id: demo_user_id.clone(),
             username: "demo".to_string(),
-            name: "Родитель (Демо)".to_string(),
+            name: "Parent (Demo)".to_string(),
             password_hash: hash_password("demo123"),
             theme: "dark".to_string(),
             created_at: Utc::now().to_rfc3339(),
@@ -72,135 +72,154 @@ impl AppState {
         let child1 = Child {
             id: child1_id.clone(),
             user_id: demo_user_id.clone(),
-            name: "Лев".to_string(),
+            family_code: Some("FAM-1024".to_string()),
+            name: "Leo".to_string(),
             age: 8,
             weight: 26.0,
-            episode: "Кашель, 4-й день".to_string(),
+            height: Some(128.0),
+            allergies: Some("None".to_string()),
+            doctor_phone: None,
+            episode: "Cough, Day 4".to_string(),
             points48h: vec![
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 38.4,
-                    drink: Some("150 мл".to_string()),
-                    med: Some("Ибупрофен 10 мл".to_string()),
-                    note: "Вечерний подъём температуры, сухой кашель".to_string(),
+                    drink: Some("150 ml".to_string()),
+                    med: Some("Ibuprofen 10 ml".to_string()),
+                    note: "Evening fever spike, dry cough".to_string(),
                     hours_ago: 40.0,
-                    timestamp: "40 ч назад".to_string(),
+                    timestamp: "40h ago".to_string(),
+                    ..Default::default()
                 },
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 37.8,
-                    drink: Some("200 мл".to_string()),
+                    drink: Some("200 ml".to_string()),
                     med: None,
-                    note: "Спал спокойно после жаропонижающего".to_string(),
+                    note: "Slept calmly after antipyretic".to_string(),
                     hours_ago: 30.0,
-                    timestamp: "30 ч назад".to_string(),
+                    timestamp: "30h ago".to_string(),
+                    ..Default::default()
                 },
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 38.6,
-                    drink: Some("100 мл".to_string()),
+                    drink: Some("100 ml".to_string()),
                     med: None,
-                    note: "Приступы кашля днём, слабость".to_string(),
+                    note: "Daytime coughing fits, fatigue".to_string(),
                     hours_ago: 21.0,
-                    timestamp: "21 ч назад".to_string(),
+                    timestamp: "21h ago".to_string(),
+                    ..Default::default()
                 },
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 39.1,
-                    drink: Some("120 мл".to_string()),
-                    med: Some("Ибупрофен 10 мл".to_string()),
-                    note: "Ночной пик 39.1 °C, дан Ибупрофен 10 мл".to_string(),
+                    drink: Some("120 ml".to_string()),
+                    med: Some("Ibuprofen 10 ml".to_string()),
+                    note: "Nighttime peak 39.1 °C, gave Ibuprofen 10 ml".to_string(),
                     hours_ago: 12.0,
-                    timestamp: "12 ч назад".to_string(),
+                    timestamp: "12h ago".to_string(),
+                    ..Default::default()
                 },
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 38.2,
-                    drink: Some("150 мл".to_string()),
+                    drink: Some("150 ml".to_string()),
                     med: None,
-                    note: "Температура снизилась, отдыхает".to_string(),
+                    note: "Fever came down, resting".to_string(),
                     hours_ago: 8.0,
-                    timestamp: "8 ч назад".to_string(),
+                    timestamp: "8h ago".to_string(),
+                    ..Default::default()
                 },
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 38.2,
-                    drink: Some("180 мл".to_string()),
+                    drink: Some("180 ml".to_string()),
                     med: None,
-                    note: "Утренний замер, сохраняется кашель".to_string(),
+                    note: "Morning check, cough persists".to_string(),
                     hours_ago: 3.0,
-                    timestamp: "3 ч назад".to_string(),
+                    timestamp: "3h ago".to_string(),
+                    ..Default::default()
                 },
             ],
             reminders: vec![
                 Reminder {
                     id: Uuid::new_v4().to_string(),
-                    title: "Ибупрофен 10 мл (при t > 38.5 °C)".to_string(),
-                    time: "Каждые 6–8 часов".to_string(),
+                    title: "Ibuprofen 10 ml (if temp > 38.5 °C)".to_string(),
+                    time: "Every 6–8 hours".to_string(),
                     done: true,
                 },
                 Reminder {
                     id: Uuid::new_v4().to_string(),
-                    title: "Теплое питье / регидрон (150 мл)".to_string(),
-                    time: "Каждые 2 часа".to_string(),
+                    title: "Warm fluids / ORS (150 ml)".to_string(),
+                    time: "Every 2 hours".to_string(),
                     done: false,
                 },
                 Reminder {
                     id: Uuid::new_v4().to_string(),
-                    title: "Визит педиатра с QR-отчётом".to_string(),
-                    time: "Сегодня в 16:30".to_string(),
+                    title: "Pediatrician visit with QR report".to_string(),
+                    time: "Today at 4:30 PM".to_string(),
                     done: false,
                 },
             ],
             created_at: Utc::now().to_rfc3339(),
+            ..Default::default()
         };
 
         let child2_id = Uuid::new_v4().to_string();
         let child2 = Child {
             id: child2_id.clone(),
             user_id: demo_user_id.clone(),
-            name: "София".to_string(),
+            family_code: Some("FAM-2048".to_string()),
+            name: "Sophia".to_string(),
             age: 4,
             weight: 16.0,
-            episode: "Температура, 2-й день".to_string(),
+            height: Some(104.0),
+            allergies: Some("None".to_string()),
+            doctor_phone: None,
+            episode: "Fever, Day 2".to_string(),
             points48h: vec![
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 37.5,
-                    drink: Some("120 мл".to_string()),
+                    drink: Some("120 ml".to_string()),
                     med: None,
-                    note: "Усталость после садика".to_string(),
+                    note: "Tired after preschool".to_string(),
                     hours_ago: 36.0,
-                    timestamp: "36 ч назад".to_string(),
+                    timestamp: "36h ago".to_string(),
+                    ..Default::default()
                 },
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 38.4,
-                    drink: Some("100 мл".to_string()),
-                    med: Some("Парацетамол 5 мл".to_string()),
-                    note: "Ночная температура, дан Парацетамол".to_string(),
+                    drink: Some("100 ml".to_string()),
+                    med: Some("Paracetamol 5 ml".to_string()),
+                    note: "Night fever, gave Paracetamol".to_string(),
                     hours_ago: 24.0,
-                    timestamp: "24 ч назад".to_string(),
+                    timestamp: "24h ago".to_string(),
+                    ..Default::default()
                 },
                 DiaryEntry {
                     id: Uuid::new_v4().to_string(),
                     temp: 37.7,
-                    drink: Some("150 мл".to_string()),
+                    drink: Some("150 ml".to_string()),
                     med: None,
-                    note: "Спокойно играет".to_string(),
+                    note: "Playing calmly".to_string(),
                     hours_ago: 1.0,
-                    timestamp: "1 ч назад".to_string(),
+                    timestamp: "1h ago".to_string(),
+                    ..Default::default()
                 },
             ],
             reminders: vec![
                 Reminder {
                     id: Uuid::new_v4().to_string(),
-                    title: "Парацетамол 5 мл (по необходимости)".to_string(),
-                    time: "Не чаще чем раз в 6 часов".to_string(),
+                    title: "Paracetamol 5 ml (as needed)".to_string(),
+                    time: "No more than every 6 hours".to_string(),
                     done: true,
                 },
             ],
             created_at: Utc::now().to_rfc3339(),
+            ..Default::default()
         };
 
         data.users.insert(demo_user_id.clone(), demo_user);
