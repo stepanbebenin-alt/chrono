@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-const SALT: &str = "pediasense_clinical_secret_salt_v1";
+const SALT: &str = "chrono_clinical_secret_salt_v1";
 
 pub fn hash_password(password: &str) -> String {
     let mut hasher = Sha256::new();
