@@ -11,27 +11,52 @@ pub struct User {
     pub created_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Child {
     pub id: String,
+    #[serde(alias = "userId", default)]
     pub user_id: String,
+    #[serde(rename = "familyCode", default)]
+    pub family_code: Option<String>,
     pub name: String,
     pub age: u32,
     pub weight: f32,
+    #[serde(default)]
+    pub height: Option<f32>,
+    #[serde(default)]
+    pub allergies: Option<String>,
+    #[serde(rename = "doctorPhone", default)]
+    pub doctor_phone: Option<String>,
     pub episode: String,
+    #[serde(default)]
     pub points48h: Vec<DiaryEntry>,
+    #[serde(default)]
     pub reminders: Vec<Reminder>,
+    #[serde(rename = "lastUrineMs", default)]
+    pub last_urine_ms: Option<u64>,
+    #[serde(rename = "urineLogs", default)]
+    pub urine_logs: Vec<u64>,
+    #[serde(default)]
+    pub vaccines: Vec<serde_json::Value>,
+    #[serde(rename = "archivedEpisodes", default)]
+    pub archived_episodes: Vec<serde_json::Value>,
+    #[serde(alias = "createdAt", default)]
     pub created_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DiaryEntry {
     pub id: String,
     pub temp: f32,
     pub drink: Option<String>,
     pub med: Option<String>,
     pub note: String,
+    #[serde(default)]
+    pub author: Option<String>,
+    #[serde(default)]
     pub hours_ago: f32,
+    #[serde(rename = "createdAtMs", default)]
+    pub created_at_ms: Option<u64>,
     pub timestamp: String,
 }
 
@@ -68,6 +93,12 @@ pub struct CreateChildRequest {
     pub name: String,
     pub age: u32,
     pub weight: f32,
+    #[serde(default)]
+    pub height: Option<f32>,
+    #[serde(default)]
+    pub allergies: Option<String>,
+    #[serde(rename = "doctorPhone", default)]
+    pub doctor_phone: Option<String>,
     pub episode: String,
 }
 
@@ -77,6 +108,28 @@ pub struct AddEntryRequest {
     pub drink: Option<String>,
     pub med: Option<String>,
     pub note: Option<String>,
+    #[serde(rename = "createdAtMs", default)]
+    pub created_at_ms: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct JoinFamilyRequest {
+    pub code: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateChildMetaRequest {
+    pub weight: Option<f32>,
+    pub height: Option<f32>,
+    pub age: Option<u32>,
+    pub episode: Option<String>,
+    #[serde(rename = "lastUrineMs")]
+    pub last_urine_ms: Option<u64>,
+    #[serde(rename = "urineLogs")]
+    pub urine_logs: Option<Vec<u64>>,
+    pub vaccines: Option<Vec<serde_json::Value>>,
+    #[serde(rename = "archivedEpisodes")]
+    pub archived_episodes: Option<Vec<serde_json::Value>>,
 }
 
 #[derive(Debug, Deserialize)]
