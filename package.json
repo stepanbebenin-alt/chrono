@@ -1,14 +1,14 @@
 {
-  "name": "pediasense",
+  "name": "chrono",
   "version": "1.0.0",
-  "description": "PediaSense — Clinical Illness Diary & Doctor Report",
+  "description": "Chrono — Clinical Illness Diary & Doctor Report",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "build": "echo 'Build OK'"
   },
   "keywords": [
-    "pediasense",
+    "chrono",
     "healthcare",
     "diary",
     "pediatrics"
