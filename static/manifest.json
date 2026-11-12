@@ -1,0 +1,24 @@
+{
+  "name": "Chrono — Clinical Child Symptom Diary",
+  "short_name": "Chrono",
+  "description": "Clinical symptom & fever diary for your pediatrician, weight-based antipyretic dosage calculator, hydration tracker, and WHO growth & vaccination reference.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b111a",
+  "theme_color": "#0b111a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%230b111a'/%3E%3Crect x='16' y='16' width='160' height='160' rx='34' fill='%232dd4bf'/%3E%3Ctext x='96' y='132' font-family='Georgia,serif' font-size='112' font-weight='bold' text-anchor='middle' fill='%230b111a'%3EC%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230b111a'/%3E%3Crect x='42' y='42' width='428' height='428' rx='90' fill='%232dd4bf'/%3E%3Ctext x='256' y='352' font-family='Georgia,serif' font-size='300' font-weight='bold' text-anchor='middle' fill='%230b111a'%3EC%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
