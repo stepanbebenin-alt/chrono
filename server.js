@@ -1,7 +1,7 @@
 /**
- * PediaSense — Render & Local Web Server
+ * Chrono — Render & Local Web Server
  * Zero external dependencies: pure Node.js built-in modules (http, fs, path, crypto)
- * Supports Family Multi-Access (Мама + Папа), Vaccination Calendar, WHO Percentiles, Real-time Sync
+ * Supports Family Multi-Access (Mom + Dad) & Real-time Sync
  */
 
 const http = require('http');
@@ -10,13 +10,13 @@ const path = require('path');
 const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'pediasense_data.json');
-const SALT = 'pediasense_clinical_salt_2026';
+const DB_FILE = path.join(__dirname, 'chrono_data.json');
+const SALT = 'chrono_clinical_salt_2026';
 
 
 
 // -------------------------------------------------------------
-// ХРАНИЛИЩЕ ДАННЫХ (ЧИСТАЯ БАЗА БЕЗ ПРИМЕРОВ)
+// DATA STORE (CLEAN DATABASE WITHOUT SAMPLE DATA)
 // -------------------------------------------------------------
 let db = {
     users: {},           // userId -> user
@@ -35,11 +35,11 @@ function loadDatabase() {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf-8');
             db = JSON.parse(raw);
-            console.log('📂 База данных загружена из', DB_FILE);
+            console.log('📂 Database loaded from', DB_FILE);
             return;
         }
     } catch (e) {
-        console.error('Ошибка чтения БД, создание новой чистой базы:', e.message);
+        console.error('Failed to read DB, initializing a fresh clean database:', e.message);
     }
 
     db = {
@@ -50,21 +50,21 @@ function loadDatabase() {
         childrenByUser: {}
     };
     saveDatabase();
-    console.log('✨ Инициализирована чистая база данных без примерных данных');
+    console.log('✨ Initialized clean database without sample data');
 }
 
 function saveDatabase() {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
     } catch (e) {
-        console.error('Ошибка сохранения БД:', e.message);
+        console.error('Failed to save DB:', e.message);
     }
 }
 
 loadDatabase();
 
 // -------------------------------------------------------------
-// ПРОВЕРКА ДОСТУПА К ПРОФИЛЮ (РОДИТЕЛЬ 1 И РОДИТЕЛЬ 2)
+// ACCESS CHECK FOR CHILD PROFILE (PARENT 1 AND PARENT 2)
 // -------------------------------------------------------------
 function hasChildAccess(child, userId) {
     if (!child || !userId) return false;
@@ -85,7 +85,7 @@ function generateFamilyCode() {
 }
 
 // -------------------------------------------------------------
-// ХЕЛПЕРЫ ДЛЯ HTTP ЗАПРОСОВ
+// HTTP REQUEST HELPERS
 // -------------------------------------------------------------
 function sendJson(res, statusCode, data) {
     res.writeHead(statusCode, {
@@ -127,7 +127,7 @@ function getAuthUserId(req) {
 }
 
 // -------------------------------------------------------------
-// ОСНОВНОЙ HTTP СЕРВЕР
+// MAIN HTTP SERVER
 // -------------------------------------------------------------
 const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') {
@@ -143,12 +143,12 @@ const server = http.createServer(async (req, res) => {
     const pathname = parsedUrl.pathname;
     const method = req.method.toUpperCase();
 
-    // Health check endpoint (для мониторинга Render)
+    // Health check endpoint (for Render monitoring)
     if (pathname === '/api/health' || pathname === '/healthz') {
-        return sendJson(res, 200, { status: 'ok', service: 'pediasense', uptime: process.uptime() });
+        return sendJson(res, 200, { status: 'ok', service: 'chrono', uptime: process.uptime() });
     }
 
-    // ---------------- API МАРШРУТЫ ----------------
+    // ---------------- API ROUTES ----------------
     if (pathname.startsWith('/api/')) {
         try {
             // POST /api/register
@@ -159,11 +159,11 @@ const server = http.createServer(async (req, res) => {
                 const name = (body.name || '').trim();
 
                 if (!username || !password || !name) {
-                    return sendJson(res, 400, { success: false, message: 'Заполните все поля' });
+                    return sendJson(res, 400, { success: false, message: 'Please fill in all fields' });
                 }
 
                 if (db.usersByUsername[username]) {
-                    return sendJson(res, 409, { success: false, message: 'Пользователь с таким логином уже существует' });
+                    return sendJson(res, 409, { success: false, message: 'An account with this username already exists' });
                 }
 
                 const userId = 'u_' + Date.now();
@@ -200,12 +200,12 @@ const server = http.createServer(async (req, res) => {
 
                 const userId = db.usersByUsername[username];
                 if (!userId || !db.users[userId]) {
-                    return sendJson(res, 401, { success: false, message: 'Неверный логин или пароль' });
+                    return sendJson(res, 401, { success: false, message: 'Invalid username or password' });
                 }
 
                 const user = db.users[userId];
                 if (user.passwordHash !== hashPassword(password)) {
-                    return sendJson(res, 401, { success: false, message: 'Неверный логин или пароль' });
+                    return sendJson(res, 401, { success: false, message: 'Invalid username or password' });
                 }
 
                 const token = 'ps_' + crypto.randomBytes(16).toString('hex');
@@ -232,19 +232,19 @@ const server = http.createServer(async (req, res) => {
                     delete db.sessions[token];
                     saveDatabase();
                 }
-                return sendJson(res, 200, { success: true, message: 'Успешный выход' });
+                return sendJson(res, 200, { success: true, message: 'Signed out successfully' });
             }
 
-            // Авторизованные маршруты
+            // Authenticated routes
             const authUserId = getAuthUserId(req);
             if (!authUserId) {
-                return sendJson(res, 401, { success: false, message: 'Требуется авторизация' });
+                return sendJson(res, 401, { success: false, message: 'Authentication required' });
             }
             const activeUser = db.users[authUserId];
 
-            // GET /api/me (Синхронизация профиля и всех детей семьи)
+            // GET /api/me (Sync user profile and all family children)
             if (pathname === '/api/me' && method === 'GET') {
-                if (!activeUser) return sendJson(res, 404, { success: false, message: 'Пользователь не найден' });
+                if (!activeUser) return sendJson(res, 404, { success: false, message: 'User not found' });
 
                 const childIds = db.childrenByUser[authUserId] || [];
                 const userChildren = childIds.map(cid => db.children[cid]).filter(Boolean);
@@ -265,11 +265,11 @@ const server = http.createServer(async (req, res) => {
                 return sendJson(res, 200, { success: true, data: theme });
             }
 
-            // POST /api/children (Создание нового профиля ребёнка)
+            // POST /api/children (Create new child profile)
             if (pathname === '/api/children' && method === 'POST') {
                 const body = await parseJsonBody(req);
                 const name = (body.name || '').trim();
-                if (!name) return sendJson(res, 400, { success: false, message: 'Имя обязательно' });
+                if (!name) return sendJson(res, 400, { success: false, message: 'Name is required' });
 
                 const childId = 'c_' + Date.now();
                 const familyCode = generateFamilyCode();
@@ -279,17 +279,17 @@ const server = http.createServer(async (req, res) => {
                     userId: authUserId,
                     familyCode: familyCode,
                     familyMembers: [
-                        { userId: authUserId, name: activeUser.name, role: 'Создатель профиля' }
+                        { userId: authUserId, name: activeUser.name, role: 'Profile creator' }
                     ],
                     name,
                     age: parseInt(body.age, 10) || 5,
                     weight: parseFloat(body.weight) || 18,
                     height: parseFloat(body.height) || 110,
-                    allergies: (body.allergies || 'Нет').trim(),
+                    allergies: (body.allergies || 'None').trim(),
                     doctorPhone: (body.doctorPhone || '').trim(),
-                    episode: (body.episode || 'Начало наблюдения').trim(),
-                    points48h: [], // Чистая история замеров
-                    reminders: [], // Напоминания
+                    episode: (body.episode || 'Observation started').trim(),
+                    points48h: [], // Clean measurement history
+                    reminders: [], // Reminders
                     createdAt: new Date().toISOString()
                 };
 
@@ -301,23 +301,23 @@ const server = http.createServer(async (req, res) => {
                 return sendJson(res, 200, { success: true, data: newChild });
             }
 
-            // POST /api/family/join (Семейный мульти-доступ: Мама + Папа)
+            // POST /api/family/join (Family Multi-Access: Mom + Dad)
             if (pathname === '/api/family/join' && method === 'POST') {
                 const body = await parseJsonBody(req);
                 const inputCode = (body.code || '').trim().toUpperCase();
 
                 if (!inputCode) {
-                    return sendJson(res, 400, { success: false, message: 'Введите код семейного доступа' });
+                    return sendJson(res, 400, { success: false, message: 'Please enter a family invite code' });
                 }
 
-                // Ищем ребёнка с таким familyCode
+                // Find child with matching familyCode
                 const matchedChild = Object.values(db.children).find(c => (c.familyCode || '').toUpperCase() === inputCode);
 
                 if (!matchedChild) {
-                    return sendJson(res, 404, { success: false, message: 'Семейный код не найден. Проверьте правильность (например FAM-7X9K)' });
+                    return sendJson(res, 404, { success: false, message: 'Family code not found. Please check the code (e.g. FAM-7X9K)' });
                 }
 
-                // Добавляем текущего пользователя в семейный доступ к ребёнку
+                // Grant family access for this child to current user
                 matchedChild.familyMembers = matchedChild.familyMembers || [];
                 const alreadyMember = matchedChild.familyMembers.some(m => (typeof m === 'string' ? m === authUserId : m.userId === authUserId));
 
@@ -325,7 +325,7 @@ const server = http.createServer(async (req, res) => {
                     matchedChild.familyMembers.push({
                         userId: authUserId,
                         name: activeUser.name,
-                        role: 'Второй родитель'
+                        role: 'Co-parent'
                     });
                 }
 
@@ -338,7 +338,7 @@ const server = http.createServer(async (req, res) => {
 
                 return sendJson(res, 200, {
                     success: true,
-                    message: `Семейный доступ подключен! Профиль "${matchedChild.name}" теперь синхронизируется между родителями.`,
+                    message: `Family access connected! Profile "${matchedChild.name}" is now synced between parents.`,
                     data: matchedChild
                 });
             }
@@ -349,7 +349,7 @@ const server = http.createServer(async (req, res) => {
                 const childId = childDelMatch[1];
                 const child = db.children[childId];
                 if (!child || !hasChildAccess(child, authUserId)) {
-                    return sendJson(res, 404, { success: false, message: 'Профиль не найден или нет доступа' });
+                    return sendJson(res, 404, { success: false, message: 'Profile not found or access denied' });
                 }
 
                 delete db.children[childId];
@@ -357,32 +357,37 @@ const server = http.createServer(async (req, res) => {
                     db.childrenByUser[uid] = db.childrenByUser[uid].filter(id => id !== childId);
                 });
                 saveDatabase();
-                return sendJson(res, 200, { success: true, message: 'Профиль удален' });
+                return sendJson(res, 200, { success: true, message: 'Profile deleted' });
             }
 
-            // POST /api/children/:id/entries (Добавление замера температуры с автором)
+            // POST /api/children/:id/entries (Add temperature measurement with author)
             const entryAddMatch = pathname.match(/^\/api\/children\/([^/]+)\/entries$/);
             if (entryAddMatch && method === 'POST') {
                 const childId = entryAddMatch[1];
                 const child = db.children[childId];
                 if (!child || !hasChildAccess(child, authUserId)) {
-                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден или нет доступа' });
+                    return sendJson(res, 404, { success: false, message: 'Child not found or access denied' });
                 }
 
                 const body = await parseJsonBody(req);
                 const temp = parseFloat(body.temp) || 37.0;
+                const nowMs = body.createdAtMs || Date.now();
 
-                child.points48h.forEach(p => { p.hours_ago = Math.min(48, (p.hours_ago || 0) + 2); });
+                child.points48h.forEach(p => {
+                    if (p.createdAtMs) p.hours_ago = +((nowMs - p.createdAtMs) / 3600000).toFixed(2);
+                    else p.hours_ago = Math.min(48, (p.hours_ago || 0) + 1);
+                });
 
                 const newEntry = {
-                    id: 'p_' + Date.now(),
+                    id: 'p_' + nowMs,
                     temp,
                     drink: body.drink ? body.drink.trim() : null,
                     med: body.med ? body.med.trim() : null,
-                    note: (body.note || 'Замер').trim(),
-                    author: activeUser.name || 'Родитель',
+                    note: (body.note || 'Measurement').trim(),
+                    author: activeUser.name || 'Parent',
                     hours_ago: 0,
-                    timestamp: 'Только что'
+                    createdAtMs: nowMs,
+                    timestamp: 'Just now'
                 };
 
                 child.points48h.push(newEntry);
@@ -391,18 +396,41 @@ const server = http.createServer(async (req, res) => {
                 return sendJson(res, 200, { success: true, data: newEntry });
             }
 
+            // PUT /api/children/:id/meta (Update growth, urine logs, vaccines, archived episodes)
+            const childMetaMatch = pathname.match(/^\/api\/children\/([^/]+)\/meta$/);
+            if (childMetaMatch && method === 'PUT') {
+                const childId = childMetaMatch[1];
+                const child = db.children[childId];
+                if (!child || !hasChildAccess(child, authUserId)) {
+                    return sendJson(res, 404, { success: false, message: 'Child not found or access denied' });
+                }
+
+                const body = await parseJsonBody(req);
+                if (body.weight !== undefined) child.weight = parseFloat(body.weight) || child.weight;
+                if (body.height !== undefined) child.height = parseFloat(body.height) || child.height;
+                if (body.age !== undefined) child.age = parseFloat(body.age) || child.age;
+                if (body.episode !== undefined) child.episode = String(body.episode).trim();
+                if (body.lastUrineMs !== undefined) child.lastUrineMs = body.lastUrineMs;
+                if (Array.isArray(body.urineLogs)) child.urineLogs = body.urineLogs;
+                if (Array.isArray(body.vaccines)) child.vaccines = body.vaccines;
+                if (Array.isArray(body.archivedEpisodes)) child.archivedEpisodes = body.archivedEpisodes;
+
+                saveDatabase();
+                return sendJson(res, 200, { success: true, data: child });
+            }
+
             // DELETE /api/children/:id/entries/:entryId
             const entryDelMatch = pathname.match(/^\/api\/children\/([^/]+)\/entries\/([^/]+)$/);
             if (entryDelMatch && method === 'DELETE') {
                 const [, childId, entryId] = entryDelMatch;
                 const child = db.children[childId];
                 if (!child || !hasChildAccess(child, authUserId)) {
-                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
+                    return sendJson(res, 404, { success: false, message: 'Child not found' });
                 }
 
                 child.points48h = child.points48h.filter(p => p.id !== entryId);
                 saveDatabase();
-                return sendJson(res, 200, { success: true, message: 'Запись удалена' });
+                return sendJson(res, 200, { success: true, message: 'Entry deleted' });
             }
 
             // POST /api/children/:id/reminders
@@ -411,15 +439,15 @@ const server = http.createServer(async (req, res) => {
                 const childId = remAddMatch[1];
                 const child = db.children[childId];
                 if (!child || !hasChildAccess(child, authUserId)) {
-                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
+                    return sendJson(res, 404, { success: false, message: 'Child not found' });
                 }
 
                 const body = await parseJsonBody(req);
                 const newRem = {
                     id: 'r_' + Date.now(),
-                    title: (body.title || 'Напоминание').trim(),
-                    time: (body.time || 'По расписанию').trim(),
-                    author: activeUser.name || 'Родитель',
+                    title: (body.title || 'Reminder').trim(),
+                    time: (body.time || 'Scheduled').trim(),
+                    author: activeUser.name || 'Parent',
                     done: false
                 };
 
@@ -434,11 +462,11 @@ const server = http.createServer(async (req, res) => {
                 const [, childId, remId] = remToggleMatch;
                 const child = db.children[childId];
                 if (!child || !hasChildAccess(child, authUserId)) {
-                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
+                    return sendJson(res, 404, { success: false, message: 'Child not found' });
                 }
 
                 const rem = child.reminders.find(r => r.id === remId);
-                if (!rem) return sendJson(res, 404, { success: false, message: 'Напоминание не найдено' });
+                if (!rem) return sendJson(res, 404, { success: false, message: 'Reminder not found' });
 
                 rem.done = !rem.done;
                 saveDatabase();
@@ -451,24 +479,40 @@ const server = http.createServer(async (req, res) => {
                 const [, childId, remId] = remDelMatch;
                 const child = db.children[childId];
                 if (!child || !hasChildAccess(child, authUserId)) {
-                    return sendJson(res, 404, { success: false, message: 'Ребёнок не найден' });
+                    return sendJson(res, 404, { success: false, message: 'Child not found' });
                 }
 
                 child.reminders = child.reminders.filter(r => r.id !== remId);
                 saveDatabase();
-                return sendJson(res, 200, { success: true, message: 'Напоминание удалено' });
+                return sendJson(res, 200, { success: true, message: 'Reminder deleted' });
             }
 
 
 
-            return sendJson(res, 404, { success: false, message: 'API маршрут не найден' });
+            return sendJson(res, 404, { success: false, message: 'API route not found' });
         } catch (err) {
             console.error('API Error:', err);
-            return sendJson(res, 500, { success: false, message: 'Внутренняя ошибка сервера' });
+            return sendJson(res, 500, { success: false, message: 'Internal server error' });
         }
     }
 
-    // ---------------- РАЗДАЧА СТАТИКИ (HTML) ----------------
+    // ---------------- STATIC SERVING (PWA + HTML) ----------------
+    if (pathname === '/manifest.json') {
+        const manifestPath = path.join(__dirname, 'static', 'manifest.json');
+        if (fs.existsSync(manifestPath)) {
+            res.writeHead(200, { 'Content-Type': 'application/manifest+json; charset=utf-8' });
+            return fs.createReadStream(manifestPath).pipe(res);
+        }
+    }
+
+    if (pathname === '/sw.js') {
+        const swPath = path.join(__dirname, 'static', 'sw.js');
+        if (fs.existsSync(swPath)) {
+            res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+            return fs.createReadStream(swPath).pipe(res);
+        }
+    }
+
     let indexPath = path.join(__dirname, 'static', 'index.html');
     if (!fs.existsSync(indexPath)) {
         indexPath = path.join(__dirname, 'index.html');
@@ -479,16 +523,16 @@ const server = http.createServer(async (req, res) => {
         fs.createReadStream(indexPath).pipe(res);
     } else {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('index.html не найден');
+        res.end('index.html not found');
     }
 });
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log('===========================================================');
-    console.log('🏥  PediaSense — Сервер готов к работе (Render / Local Node)');
+    console.log('🏥  Chrono — Server Ready (Render / Local Node)');
     console.log('===========================================================');
-    console.log(`⚡ Сервер запущен на порту: ${PORT}`);
-    console.log(`👉 Откройте в браузере:      http://localhost:${PORT}`);
-    console.log(`🌐 Для проверки Render:     http://localhost:${PORT}/api/health`);
+    console.log(`⚡ Server listening on port: ${PORT}`);
+    console.log(`👉 Open in browser:          http://localhost:${PORT}`);
+    console.log(`🌐 Render health check:      http://localhost:${PORT}/api/health`);
     console.log('===========================================================');
 });
