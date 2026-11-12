@@ -1,8 +1,8 @@
 [package]
-name = "pediasense"
+name = "chrono-app"
 version = "0.1.0"
 edition = "2021"
-description = "PediaSense — Clinical Illness Diary & Doctor Report written in Rust"
+description = "Chrono — Clinical Illness Diary & Doctor Report written in Rust"
 
 [dependencies]
 axum = { version = "0.7", features = ["macros"] }
