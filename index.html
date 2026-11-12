@@ -117,9 +117,12 @@
 <body class="bg-black antialiased h-full m-0 p-0 selection:bg-teal-500 selection:text-white">
 
     <!-- ========================================================= -->
-    <!-- 1. SPLASH SCREEN / INTRO                                  -->
+    <!-- 1. SPLASH SCREEN / INTRO (HIDDEN BY DEFAULT FOR INSTANT LAUNCH) -->
     <!-- ========================================================= -->
-    <div id="splashScreen" class="fixed inset-0 z-[100] flex flex-col items-center justify-between p-6 bg-[#0b111a] text-[#f1f5f9] transition-opacity duration-700">
+    <div id="quickToast" class="fixed top-14 left-1/2 -translate-x-1/2 z-[120] bg-teal-400 text-[#0b111a] font-bold text-xs px-4 py-2.5 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none">
+        ✅ Saved to diary!
+    </div>
+    <div id="splashScreen" class="fixed inset-0 z-[100] flex flex-col items-center justify-between p-6 bg-[#0b111a] text-[#f1f5f9] transition-opacity duration-700 hidden">
         <div class="w-full flex justify-between items-center text-xs ps-muted pt-2">
             <span class="flex items-center space-x-1.5">
                 <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
@@ -225,8 +228,8 @@
             </form>
 
             <div class="border-t border-current/10 pt-3 text-center">
-                <button onclick="handleGuestDemo()" class="text-xs text-teal-400 font-semibold hover:underline">
-                    🚀 Start without password (Quick guest access)
+                <button onclick="document.getElementById('onboardingAuthScreen').classList.add('hidden'); handleGuestDemo()" class="text-xs text-teal-400 font-semibold hover:underline">
+                    ✕ Close & continue in instant app mode
                 </button>
             </div>
         </div>
@@ -288,48 +291,50 @@
     <!-- ========================================================= -->
     <div id="appShell" class="mobile-shell theme-dark shadow-2xl">
 
-        <!-- TOP HEADER -->
-        <header class="ps-nav sticky top-0 z-40 border-b px-3.5 py-2.5 flex items-center justify-between backdrop-blur-md">
-            <div class="flex items-center space-x-2">
-                <div onclick="showSplashScreen()" class="w-8 h-8 rounded-lg ps-btn-accent flex items-center justify-center font-serif-ed font-bold text-lg shadow-sm cursor-pointer" title="Splash Screen">
+        <!-- TOP HEADER (CLEAN APP BAR WITH 1-TAP WEIGHT STEPPER) -->
+        <header class="ps-nav sticky top-0 z-40 border-b px-3 py-2 flex items-center justify-between backdrop-blur-md">
+            <div class="flex items-center space-x-1.5">
+                <div onclick="switchTab('diary')" class="w-8 h-8 rounded-xl ps-btn-accent flex items-center justify-center font-serif-ed font-bold text-lg shadow-sm cursor-pointer shrink-0" title="Chrono Home">
                     C
                 </div>
                 <!-- Active child selector -->
                 <div class="relative">
                     <button onclick="toggleChildrenDropdown()" id="childSelectorBtn" class="ps-card px-2.5 py-1.5 rounded-full flex items-center space-x-1.5 text-xs font-semibold hover:opacity-90 transition">
-                        <span id="headerChildInitial" class="w-5 h-5 rounded-full bg-teal-800 text-teal-200 text-[11px] font-bold flex items-center justify-center">—</span>
-                        <span id="headerChildName" class="max-w-[95px] truncate">No children</span>
+                        <span id="headerChildInitial" class="w-5 h-5 rounded-full bg-teal-800 text-teal-200 text-[11px] font-bold flex items-center justify-center">M</span>
+                        <span id="headerChildName" class="max-w-[85px] truncate">My Child</span>
                         <span class="text-[10px] ps-muted">▾</span>
                     </button>
 
                     <div id="childrenDropdown" class="hidden absolute top-full left-0 mt-1.5 w-64 ps-card rounded-xl shadow-xl p-2 z-50 space-y-1">
                         <div id="childrenDropdownList" class="space-y-1 max-h-48 overflow-y-auto"></div>
                         <div class="border-t border-current/10 pt-1.5 mt-1 space-y-1">
+                            <button onclick="promptQuickRenameChild(); toggleChildrenDropdown();" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-teal-300 hover:bg-white/5 flex items-center space-x-1.5">
+                                <span>✏️</span><span>Rename Current Child</span>
+                            </button>
                             <button onclick="openChildModal(); toggleChildrenDropdown();" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold ps-accent hover:bg-white/5 flex items-center space-x-1.5">
-                                <span>➕</span><span>Add Child</span>
+                                <span>➕</span><span>Add Another Child</span>
                             </button>
                             <button onclick="openFamilyModal(); toggleChildrenDropdown();" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-sky-400 hover:bg-white/5 flex items-center space-x-1.5">
-                                <span>👨‍👩‍👧</span><span>Family Access (Mom + Dad)</span>
+                                <span>👨‍👩‍👧</span><span>Family Sync (<span id="familyCodeBadge" class="font-mono">FAM</span>)</span>
                             </button>
                         </div>
                     </div>
                 </div>
+
+                <!-- 1-Tap Weight Stepper Pill right in the header -->
+                <div class="ps-card rounded-full px-1.5 py-1 flex items-center space-x-1 text-xs">
+                    <button type="button" onclick="adjustQuickWeight(-0.5)" class="w-5 h-5 rounded-full ps-subcard flex items-center justify-center font-bold text-xs active:scale-90" title="Decrease weight">−</button>
+                    <span id="headerWeightLabel" onclick="switchTab('calculator')" class="font-mono font-bold text-[11px] ps-accent px-1 cursor-pointer" title="Tap to open Dosage Calculator">16 kg</span>
+                    <button type="button" onclick="adjustQuickWeight(0.5)" class="w-5 h-5 rounded-full ps-subcard flex items-center justify-center font-bold text-xs active:scale-90" title="Increase weight">+</button>
+                </div>
             </div>
 
-            <!-- Right buttons: Units + Family + Themes + Settings + Profile -->
+            <!-- Right buttons: Units + Theme + Doctor PDF -->
             <div class="flex items-center space-x-1">
-                <!-- Unit switcher (°C/kg <-> °F/lb) -->
-                <button onclick="toggleUnits()" id="unitToggleBtn" title="Switch temperature & weight units (°C/kg ↔ °F/lb)" class="ps-card px-2 py-1.5 rounded-full text-[10px] font-mono font-bold ps-accent hover:opacity-80 transition">
+                <button onclick="toggleUnits()" id="unitToggleBtn" title="Switch °C/kg ↔ °F/lb" class="ps-card px-2 py-1.5 rounded-full text-[10px] font-mono font-bold ps-accent hover:opacity-80 transition">
                     °C·kg
                 </button>
 
-                <!-- Family Access button -->
-                <button onclick="openFamilyModal()" title="Family Access (Mom + Dad)" class="ps-card px-2 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1 hover:opacity-80 transition">
-                    <span>👨‍👩‍👧</span>
-                    <span id="familyCodeBadge" class="font-mono text-[10px] ps-accent">Family</span>
-                </button>
-
-                <!-- Theme switcher with clear names -->
                 <div class="relative">
                     <button onclick="toggleThemeMenu()" title="Select theme" class="w-8 h-8 rounded-full ps-card flex items-center justify-center text-sm hover:opacity-80 transition">
                         🎨
@@ -350,15 +355,11 @@
                     </div>
                 </div>
 
-                <!-- Settings button -->
-                <button onclick="switchTab('settings')" title="App Settings" class="w-8 h-8 rounded-full ps-card flex items-center justify-center text-sm hover:opacity-80 transition">
-                    ⚙️
+                <button onclick="downloadPdfReport()" title="Download Doctor PDF" class="ps-btn-accent px-2.5 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1 shadow-sm active:scale-95 transition">
+                    <span>📄</span><span>PDF</span>
                 </button>
-
-                <!-- Profile / Sign out -->
-                <button onclick="openAuthModal()" id="authBtn" class="ps-card px-2.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1 hover:opacity-80 transition">
-                    <span id="authIcon">👤</span>
-                    <span id="authLabel" class="max-w-[65px] truncate">Sign In</span>
+                <button onclick="openAuthModal()" id="authBtn" class="hidden">
+                    <span id="authIcon">👤</span><span id="authLabel">Sign In</span>
                 </button>
             </div>
         </header>
@@ -378,7 +379,7 @@
         <main class="flex-1 px-3.5 py-3 space-y-3 pb-24 overflow-y-auto">
 
             <!-- ========================================================= -->
-            <!-- TAB 1: MAIN DIARY                                     -->
+            <!-- TAB 1: MAIN DIARY (ULTRA-SIMPLE 1-TAP MOBILE APP EXPERIENCE) -->
             <!-- ========================================================= -->
             <div id="tab-diary" class="tab-content active space-y-3">
 
@@ -406,34 +407,96 @@
                     </div>
                 </div>
 
-                <!-- Current episode / condition card with quick PDF & archive buttons -->
-                <div class="ps-card rounded-2xl p-3.5 space-y-2">
+                <!-- ⚡ 1-TAP TEMPERATURE & DOSE LOGGER (RIGHT AT THE TOP!) -->
+                <div class="ps-card rounded-3xl p-4 space-y-3.5 border border-teal-500/30 shadow-lg">
                     <div class="flex items-center justify-between">
-                        <div class="min-w-0 pr-2">
-                            <div class="flex items-center space-x-1.5">
-                                <span class="text-[10px] ps-muted uppercase tracking-wider font-semibold">Observation Episode</span>
-                                <span id="familySyncStatus" class="w-2 h-2 rounded-full bg-teal-400" title="Synced"></span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">🌡️</span>
+                            <div>
+                                <h2 class="font-serif-ed font-bold text-base leading-tight">1-Tap Symptom & Fever Log</h2>
+                                <p id="childSubline" class="text-[11px] ps-muted">Tap a temperature & press Log Now</p>
                             </div>
-                            <h2 id="childHeadline" class="font-serif-ed font-bold text-lg truncate">Observation</h2>
-                            <p id="childSubline" class="text-xs ps-muted mt-0.5">Add a child to get started</p>
                         </div>
-                        <div class="flex space-x-1.5 shrink-0">
-                            <button onclick="switchTab('calculator')" class="ps-subcard border border-teal-500/40 font-bold text-xs px-2.5 py-2 rounded-xl text-teal-400 flex items-center space-x-1 hover:bg-teal-500/10 transition">
-                                <span>💊</span><span>Doses</span>
-                            </button>
-                            <button onclick="downloadPdfReport()" title="Download PDF report for pediatrician" class="ps-btn-accent font-bold text-xs px-3 py-2 rounded-xl flex items-center space-x-1 shadow-sm active:scale-95 transition">
-                                <span>📄</span><span>Doctor PDF</span>
-                            </button>
+                        <span id="currentTimeLabel" class="text-xs ps-muted font-mono bg-black/20 px-2 py-1 rounded-lg">00:00</span>
+                    </div>
+
+                    <form onsubmit="handleDiarySubmit(event)" class="space-y-3">
+                        <!-- Big Tactile Temperature Display + Stepper + Slider -->
+                        <div class="ps-subcard rounded-2xl p-3 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <button type="button" onclick="stepQuickTemp(-0.1)" class="w-11 h-11 rounded-2xl ps-card font-bold text-xl flex items-center justify-center active:scale-90 transition shadow-sm">−</button>
+                                <div class="text-center">
+                                    <div class="flex items-baseline justify-center space-x-1">
+                                        <input type="number" step="0.1" id="inputTemp" value="37.5" oninput="syncTempSliderFromInput()" required class="bg-transparent text-center font-serif-ed font-bold text-4xl w-28 focus:outline-none text-teal-400">
+                                        <span id="inputTempLabel" class="text-sm font-bold ps-muted">°C</span>
+                                    </div>
+                                    <span id="tempSeverityHint" class="text-[10px] font-semibold text-teal-400 block">Low-grade / Normal</span>
+                                </div>
+                                <button type="button" onclick="stepQuickTemp(0.1)" class="w-11 h-11 rounded-2xl ps-card font-bold text-xl flex items-center justify-center active:scale-90 transition shadow-sm">+</button>
+                            </div>
+
+                            <input type="range" id="tempRangeSlider" min="35.5" max="41.0" step="0.1" value="37.5" oninput="onTempSliderInput(this.value)" class="w-full accent-teal-400 cursor-pointer h-2 rounded-lg">
+
+                            <!-- 6 Big 1-Tap Temperature Presets -->
+                            <div class="grid grid-cols-6 gap-1">
+                                <button type="button" id="quickTempBtnBase" onclick="setQuickTemp(36.6)" class="ps-card hover:border-teal-400 py-2 rounded-xl text-[11px] font-bold text-emerald-400 active:scale-95 transition">36.6°</button>
+                                <button type="button" id="quickTempBtn0" onclick="setQuickTemp(37.5)" class="ps-card hover:border-teal-400 py-2 rounded-xl text-[11px] font-bold active:scale-95 transition">37.5°</button>
+                                <button type="button" id="quickTempBtn1" onclick="setQuickTemp(38.0)" class="ps-card hover:border-amber-400 py-2 rounded-xl text-[11px] font-bold text-amber-300 active:scale-95 transition">38.0°</button>
+                                <button type="button" id="quickTempBtn2" onclick="setQuickTemp(38.5)" class="ps-card hover:border-rose-400 py-2 rounded-xl text-[11px] font-bold text-rose-400 active:scale-95 transition">38.5°</button>
+                                <button type="button" id="quickTempBtn3" onclick="setQuickTemp(39.0)" class="ps-card hover:border-rose-500 py-2 rounded-xl text-[11px] font-bold text-rose-500 active:scale-95 transition">39.0°</button>
+                                <button type="button" id="quickTempBtnHigh" onclick="setQuickTemp(39.5)" class="ps-card hover:border-rose-500 py-2 rounded-xl text-[11px] font-bold text-rose-500 active:scale-95 transition">39.5°</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-1.5 border-t border-current/10 text-[11px]">
-                        <button onclick="openQrModal()" class="ps-accent font-semibold hover:underline flex items-center space-x-1">
-                            <span>📱</span><span>QR & Share Summary</span>
+
+                        <!-- 1-Tap Medication Selector (Auto-calculated from child weight!) -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-semibold ps-muted">Did you give fever medicine? (1 tap):</span>
+                                <button type="button" onclick="switchTab('calculator')" class="text-[10px] ps-accent font-semibold underline">All syrups & suppositories →</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5 text-xs">
+                                <button type="button" id="quickMedNone" onclick="selectQuickMedPill('none')" class="ps-subcard border-2 border-teal-400 py-2 px-2 rounded-xl font-bold text-[11px] text-center transition">
+                                    🚫 No Med
+                                </button>
+                                <button type="button" id="quickMedIbu" onclick="selectQuickMedPill('ibu')" class="ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition">
+                                    💊 Ibuprofen<br><span id="quickIbuDoseSpan" class="text-[10px] text-teal-400 font-mono">8.0 ml</span>
+                                </button>
+                                <button type="button" id="quickMedPara" onclick="selectQuickMedPill('para')" class="ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition">
+                                    💊 Paracetamol<br><span id="quickParaDoseSpan" class="text-[10px] text-sky-400 font-mono">10.0 ml</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 1-Tap Symptom & Fluid Chips (Optional — Never Required!) -->
+                        <div>
+                            <span class="block text-[11px] font-semibold ps-muted mb-1.5">Symptoms or fluids (optional, tap any):</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" onclick="toggleQuickDrinkChip(this, '100 ml water')" id="quickDrinkChipBtn" class="ps-subcard px-2.5 py-1.5 rounded-xl text-xs font-semibold text-sky-300">💧 +100 ml Drink</button>
+                                <button type="button" onclick="toggleSymptomChip(this, 'Cough')" class="symptom-chip ps-subcard px-2.5 py-1.5 rounded-xl text-xs font-medium">🗣️ Cough</button>
+                                <button type="button" onclick="toggleSymptomChip(this, 'Runny nose')" class="symptom-chip ps-subcard px-2.5 py-1.5 rounded-xl text-xs font-medium">🤧 Runny nose</button>
+                                <button type="button" onclick="toggleSymptomChip(this, 'Lethargy')" class="symptom-chip ps-subcard px-2.5 py-1.5 rounded-xl text-xs font-medium">😴 Lethargy</button>
+                                <button type="button" onclick="toggleSymptomChip(this, 'Chills')" class="symptom-chip ps-subcard px-2.5 py-1.5 rounded-xl text-xs font-medium">🥶 Chills</button>
+                                <button type="button" onclick="toggleSymptomChip(this, 'Sore throat')" class="symptom-chip ps-subcard px-2.5 py-1.5 rounded-xl text-xs font-medium">🔴 Sore throat</button>
+                            </div>
+                        </div>
+
+                        <!-- Optional Custom Note / Custom Med Drawer -->
+                        <details class="ps-subcard rounded-xl px-3 py-2 text-xs">
+                            <summary class="cursor-pointer font-semibold ps-muted text-[11px] select-none">✏️ Add custom note, custom med, or exact ml (optional)</summary>
+                            <div class="grid grid-cols-1 gap-2 pt-2.5">
+                                <input type="text" id="inputNote" placeholder="Notes (e.g., slept well, coughing at night)" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text" id="inputMed" placeholder="Custom med & dose" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
+                                    <input type="text" id="inputDrink" placeholder="Fluids (e.g. 150 ml)" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- GIANT 1-TAP SAVE BUTTON -->
+                        <button type="submit" class="w-full ps-btn-accent font-bold py-3.5 rounded-2xl text-base transition shadow-lg active:scale-[0.98] flex items-center justify-center space-x-2">
+                            <span>✓</span><span>Log Measurement Now</span>
                         </button>
-                        <button onclick="archiveCurrentEpisode()" class="ps-muted hover:text-teal-400 font-semibold flex items-center space-x-1 transition" title="Archive this illness episode and start a clean diary">
-                            <span>📁</span><span>Resolve & Archive Episode</span>
-                        </button>
-                    </div>
+                    </form>
                 </div>
 
                 <!-- Key Metrics: Latest, 48h Peak, Medication -->
@@ -451,83 +514,73 @@
                     </div>
 
                     <div class="ps-card rounded-2xl p-2.5 text-center">
-                        <span class="text-[10px] ps-muted block mb-0.5">Medication</span>
+                        <span class="text-[10px] ps-muted block mb-0.5">Last Med</span>
                         <div id="lastMedVal" class="font-serif-ed font-bold text-xs truncate leading-none mt-1">—</div>
                         <span id="lastMedTime" class="text-[10px] ps-muted block mt-1">none given</span>
                     </div>
                 </div>
 
                 <!-- ⏳ Antipyretic Safety Interval Timer + Live Countdown & 24h Cumulative Tracker -->
-                <div id="medSafetyCard" class="ps-subcard rounded-xl px-3 py-2.5 space-y-1.5 text-xs border-l-4 border-l-teal-400">
+                <div id="medSafetyCard" class="ps-subcard rounded-2xl px-3.5 py-2.5 space-y-1.5 text-xs border-l-4 border-l-teal-400">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <span class="text-base">⏳</span>
                             <div>
                                 <div class="flex items-center space-x-1.5 flex-wrap">
-                                    <span id="medSafetyTitle" class="font-bold text-teal-400">Antipyretic Intervals</span>
+                                    <span id="medSafetyTitle" class="font-bold text-teal-400">Safe Dose Timer</span>
                                     <span id="medLiveCountdownBadge" class="hidden font-mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">00:00:00</span>
                                 </div>
-                                <p id="medSafetyDesc" class="text-[11px] ps-muted">Log medication doses to automatically track safe intervals.</p>
+                                <p id="medSafetyDesc" class="text-[11px] ps-muted">Tap a medicine above when logging to start the safety countdown.</p>
                             </div>
                         </div>
-                        <button onclick="switchTab('calculator')" class="text-[11px] font-semibold text-teal-400 underline shrink-0 ml-2">Calculator</button>
                     </div>
                     <div id="medDailyCumulativeBar" class="pt-1.5 border-t border-current/10 flex items-center justify-between text-[10px] ps-muted">
-                        <span id="medDailyCumulativeText">24h doses: Ibuprofen 0/3 (max 30 mg/kg) · Paracetamol 0/4 (max 60 mg/kg)</span>
+                        <span id="medDailyCumulativeText">24h doses: Ibuprofen 0/3 · Paracetamol 0/4</span>
                     </div>
                 </div>
 
-                <!-- Clinical Status Indicator -->
-                <div id="statusBadge" class="ps-card rounded-xl px-3 py-2 flex items-center space-x-2 text-xs border-l-4 border-l-teal-500">
-                    <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
-                    <span id="statusText" class="font-semibold text-teal-400">Diary ready to log temperatures and symptoms.</span>
+                <!-- Clinical Status Indicator (hidden helper keep for compatibility) -->
+                <div id="statusBadge" class="hidden">
+                    <span id="statusDot"></span>
+                    <span id="statusText"></span>
                 </div>
 
-                <!-- 💧 24h Hydration Progress & Urine / Wet-Diaper Tracker -->
+                <!-- 💧 1-Tap Hydration & Wet Diaper Bar -->
                 <div class="ps-card rounded-2xl p-3.5 space-y-2.5">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-1.5">
                             <span class="text-base">💧</span>
                             <div>
-                                <h3 class="font-serif-ed font-bold text-sm">24h Hydration & Urine Output</h3>
-                                <p class="text-[10px] ps-muted">Key dehydration check during pediatric fever</p>
+                                <h3 class="font-serif-ed font-bold text-sm">Hydration & Pee Tracker</h3>
+                                <p class="text-[10px] ps-muted" id="urineStatusText">Tap below whenever your child drinks or pees</p>
                             </div>
                         </div>
-                        <span id="hydrationProgressText" class="font-mono text-xs font-bold text-sky-400">0 / 1500 ml (0%)</span>
+                        <span id="hydrationProgressText" class="font-mono text-xs font-bold text-sky-400">0 / 1500 ml</span>
                     </div>
 
                     <div class="w-full bg-black/30 h-2 rounded-full overflow-hidden border border-current/10">
                         <div id="hydrationProgressBar" class="h-full bg-gradient-to-r from-sky-400 to-teal-400 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
 
-                    <div class="flex items-center justify-between gap-1.5 text-[11px]">
-                        <span class="ps-muted text-[10px]">Quick fluid log:</span>
-                        <div class="flex space-x-1">
-                            <button type="button" onclick="quickLogFluid(50)" class="ps-subcard hover:border-sky-400 px-2 py-1 rounded-lg font-semibold text-sky-300 transition">+50 ml</button>
-                            <button type="button" onclick="quickLogFluid(100)" class="ps-subcard hover:border-sky-400 px-2 py-1 rounded-lg font-semibold text-sky-300 transition">+100 ml</button>
-                            <button type="button" onclick="quickLogFluid(150)" class="ps-subcard hover:border-sky-400 px-2 py-1 rounded-lg font-semibold text-sky-300 transition">+150 ml ORS</button>
-                        </div>
-                    </div>
-
-                    <div id="urineTrackerRow" class="ps-subcard rounded-xl px-2.5 py-2 flex items-center justify-between text-xs">
-                        <div>
-                            <span class="font-semibold block text-[11px]" id="urineStatusTitle">Urination / Wet Diaper</span>
-                            <span class="text-[10px] ps-muted" id="urineStatusText">Not logged yet · Watch for &gt;6h without urination</span>
-                        </div>
-                        <button type="button" onclick="logUrination()" class="ps-btn-accent px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 ml-2 active:scale-95 transition">
-                            💧 Log Wet Diaper / Pee
+                    <div class="grid grid-cols-4 gap-1.5 text-xs pt-0.5">
+                        <button type="button" onclick="quickLogFluid(50)" class="ps-subcard hover:border-sky-400 py-2 rounded-xl font-bold text-sky-300 active:scale-95 transition">+50 ml</button>
+                        <button type="button" onclick="quickLogFluid(100)" class="ps-subcard hover:border-sky-400 py-2 rounded-xl font-bold text-sky-300 active:scale-95 transition">+100 ml</button>
+                        <button type="button" onclick="quickLogFluid(150)" class="ps-subcard hover:border-sky-400 py-2 rounded-xl font-bold text-sky-300 active:scale-95 transition">+150 ml</button>
+                        <button type="button" onclick="logUrination()" class="ps-btn-accent py-2 rounded-xl text-[11px] font-bold active:scale-95 transition">
+                            💧 Pee
                         </button>
                     </div>
+                    <div id="urineTrackerRow" class="hidden"><span id="urineStatusTitle"></span></div>
                 </div>
 
                 <!-- Interactive 48-hour chart -->
                 <div class="ps-card rounded-2xl p-3.5 space-y-2">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="font-serif-ed font-bold text-base">48-Hour Trend</h3>
-                            <p class="text-[11px] ps-muted">Temperature curve and medication markers</p>
+                            <h3 class="font-serif-ed font-bold text-base">48-Hour Fever Curve</h3>
+                            <p class="text-[11px] ps-muted">Temperature trend &amp; medication markers</p>
                         </div>
-                        <span class="text-[11px] font-mono px-2 py-0.5 rounded-md ps-subcard">Threshold: 38.0 °C</span>
+                        <span class="text-[11px] font-mono px-2 py-0.5 rounded-md ps-subcard">38.0 °C line</span>
                     </div>
 
                     <div class="w-full h-[170px] pt-1">
@@ -550,108 +603,69 @@
                     </div>
                 </div>
 
-                <!-- Quick entry form -->
-                <div class="ps-card rounded-2xl p-3.5 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-serif-ed font-bold text-base">Quick Measurement Entry</h3>
-                        <span id="currentTimeLabel" class="text-xs ps-muted font-mono">00:00</span>
-                    </div>
-
-                    <!-- Quick temperature preset buttons -->
-                    <div class="grid grid-cols-4 gap-1.5">
-                        <button type="button" id="quickTempBtn0" onclick="setQuickTemp(37.5)" class="ps-subcard hover:border-teal-400 py-1.5 rounded-xl text-xs font-bold transition">37.5°C</button>
-                        <button type="button" id="quickTempBtn1" onclick="setQuickTemp(38.0)" class="ps-subcard hover:border-teal-400 py-1.5 rounded-xl text-xs font-bold transition">38.0°C</button>
-                        <button type="button" id="quickTempBtn2" onclick="setQuickTemp(38.5)" class="ps-subcard hover:border-rose-400 py-1.5 rounded-xl text-xs font-bold transition text-rose-400">38.5°C</button>
-                        <button type="button" id="quickTempBtn3" onclick="setQuickTemp(39.0)" class="ps-subcard hover:border-rose-400 py-1.5 rounded-xl text-xs font-bold transition text-rose-500">39.0°C</button>
-                    </div>
-
-                    <!-- Symptom chips -->
-                    <div>
-                        <span class="block text-[11px] ps-muted mb-1">Common symptoms (tap to select):</span>
-                        <div class="flex flex-wrap gap-1.5">
-                            <button type="button" onclick="toggleSymptomChip(this, 'Cough')" class="symptom-chip ps-subcard px-2 py-1 rounded-lg text-xs font-medium">🗣️ Cough</button>
-                            <button type="button" onclick="toggleSymptomChip(this, 'Runny nose')" class="symptom-chip ps-subcard px-2 py-1 rounded-lg text-xs font-medium">🤧 Runny nose</button>
-                            <button type="button" onclick="toggleSymptomChip(this, 'Lethargy')" class="symptom-chip ps-subcard px-2 py-1 rounded-lg text-xs font-medium">😴 Lethargy</button>
-                            <button type="button" onclick="toggleSymptomChip(this, 'Chills')" class="symptom-chip ps-subcard px-2 py-1 rounded-lg text-xs font-medium">🥶 Chills</button>
-                            <button type="button" onclick="toggleSymptomChip(this, 'Sore throat')" class="symptom-chip ps-subcard px-2 py-1 rounded-lg text-xs font-medium">🔴 Sore throat</button>
-                            <button type="button" onclick="toggleSymptomChip(this, 'Drinking fluids')" class="symptom-chip ps-subcard px-2 py-1 rounded-lg text-xs font-medium">💧 Drinking fluids</button>
-                        </div>
-                    </div>
-
-                    <form onsubmit="handleDiarySubmit(event)" class="space-y-2.5">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label id="inputTempLabel" class="block text-[11px] ps-muted mb-1">Temperature (°C)*</label>
-                                <input type="number" step="0.1" id="inputTemp" placeholder="38.2" required class="ps-input w-full rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-teal-400">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] ps-muted mb-1">Fluids (ml, optional)</label>
-                                <input type="text" id="inputDrink" placeholder="150 ml water" class="ps-input w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[11px] ps-muted mb-1">Medication & dose (optional)</label>
-                                <input type="text" id="inputMed" placeholder="Ibuprofen 9.5 ml" class="ps-input w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] ps-muted mb-1">Symptoms / condition</label>
-                                <input type="text" id="inputNote" placeholder="Sleepy, mild cough" required class="ps-input w-full rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-teal-400">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full ps-btn-accent font-bold py-2.5 rounded-xl text-sm transition shadow-sm active:scale-[0.99]">
-                            + Save Measurement (sets 3h alarm)
-                        </button>
-                    </form>
-                </div>
-
                 <!-- Measurement history -->
                 <div class="ps-card rounded-2xl p-3.5 space-y-2">
                     <div class="flex items-center justify-between">
-                        <h3 class="font-serif-ed font-bold text-base">Measurement History</h3>
+                        <h3 class="font-serif-ed font-bold text-base">Recent Log Entries</h3>
                         <span id="entriesCount" class="text-xs ps-muted">0 entries</span>
                     </div>
                     <div id="diaryEntriesList" class="space-y-2 max-h-60 overflow-y-auto pr-0.5"></div>
                 </div>
 
-                <!-- ⏰ Medication & Care Reminders Checklist -->
+                <!-- 📄 1-Tap Doctor Report & Share Bar -->
                 <div class="ps-card rounded-2xl p-3.5 space-y-2.5">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="text-base">⏰</span>
-                            <div>
-                                <h3 class="font-serif-ed font-bold text-base">Care & Medication Reminders</h3>
-                                <p class="text-[10px] ps-muted">Shared checklist for both parents</p>
-                            </div>
+                        <div>
+                            <span class="text-[10px] ps-muted uppercase tracking-wider font-semibold">For Your Pediatrician</span>
+                            <h3 id="childHeadline" class="font-serif-ed font-bold text-base truncate">Doctor Report &amp; Summary</h3>
                         </div>
-                        <span id="remindersCountBadge" class="text-[11px] ps-muted">0 tasks</span>
+                        <span id="familySyncStatus" class="w-2 h-2 rounded-full bg-teal-400" title="Ready"></span>
                     </div>
-
-                    <form onsubmit="handleReminderSubmit(event)" class="flex space-x-1.5 text-xs">
-                        <input type="text" id="inputReminderTitle" placeholder="e.g. Give ORS 100 ml / Check temp" required class="ps-input flex-1 rounded-xl px-2.5 py-1.5 text-xs">
-                        <input type="text" id="inputReminderTime" placeholder="Every 3h" class="ps-input w-24 rounded-xl px-2 py-1.5 text-xs">
-                        <button type="submit" class="ps-btn-accent font-bold px-3 py-1.5 rounded-xl text-xs shrink-0">+</button>
-                    </form>
-
-                    <div id="remindersList" class="space-y-1.5"></div>
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <button onclick="downloadPdfReport()" class="ps-btn-accent font-bold py-2.5 rounded-xl flex items-center justify-center space-x-1 shadow-sm active:scale-95 transition">
+                            <span>📄</span><span>Save PDF</span>
+                        </button>
+                        <button onclick="openQrModal()" class="ps-subcard font-bold py-2.5 rounded-xl flex items-center justify-center space-x-1 ps-accent active:scale-95 transition">
+                            <span>📱</span><span>QR Code</span>
+                        </button>
+                        <button onclick="shareReportTelegram()" class="ps-subcard font-bold py-2.5 rounded-xl flex items-center justify-center space-x-1 text-sky-400 active:scale-95 transition">
+                            <span>📤</span><span>Copy Text</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- 📁 Archived Illness Episodes -->
-                <div id="archivedEpisodesCard" class="ps-card rounded-2xl p-3.5 space-y-2 hidden">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="text-base">📁</span>
-                            <div>
-                                <h3 class="font-serif-ed font-bold text-base">Archived Illness Episodes</h3>
-                                <p class="text-[10px] ps-muted">Past resolved illness logs for medical history</p>
-                            </div>
+                <!-- Collapsible Extras: Reminders & Episode Archive -->
+                <details class="ps-card rounded-2xl p-3.5 space-y-3">
+                    <summary class="cursor-pointer font-serif-ed font-bold text-sm flex items-center justify-between select-none">
+                        <span>⏰ Care Reminders &amp; Episode Archive</span>
+                        <span id="remindersCountBadge" class="text-[11px] font-sans ps-muted">Tap to expand ▾</span>
+                    </summary>
+
+                    <div class="space-y-3 pt-2 border-t border-current/10">
+                        <form onsubmit="handleReminderSubmit(event)" class="flex space-x-1.5 text-xs">
+                            <input type="text" id="inputReminderTitle" placeholder="e.g. Give ORS 100 ml / Check temp" required class="ps-input flex-1 rounded-xl px-2.5 py-2 text-xs">
+                            <input type="text" id="inputReminderTime" placeholder="Every 3h" class="ps-input w-24 rounded-xl px-2 py-2 text-xs">
+                            <button type="submit" class="ps-btn-accent font-bold px-3 py-2 rounded-xl text-xs shrink-0">+</button>
+                        </form>
+
+                        <div id="remindersList" class="space-y-1.5"></div>
+
+                        <div class="pt-2 border-t border-current/10 flex items-center justify-between text-xs">
+                            <span class="ps-muted">Finished this illness episode?</span>
+                            <button onclick="archiveCurrentEpisode()" class="ps-subcard px-3 py-1.5 rounded-xl font-semibold text-teal-400">
+                                📁 Resolve &amp; Archive Episode
+                            </button>
                         </div>
-                        <span id="archivedEpisodesCount" class="text-[11px] ps-muted">0</span>
+
+                        <div id="archivedEpisodesCard" class="space-y-2 hidden">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-bold text-xs">Past Archived Episodes</h4>
+                                <span id="archivedEpisodesCount" class="text-[11px] ps-muted">0</span>
+                            </div>
+                            <div id="archivedEpisodesList" class="space-y-2"></div>
+                        </div>
                     </div>
-                    <div id="archivedEpisodesList" class="space-y-2"></div>
-                </div>
+                </details>
 
             </div>
 
@@ -659,23 +673,48 @@
             <!-- TAB 2: DEDICATED DOSAGE CALCULATOR & REFERENCE          -->
             <!-- ========================================================= -->
             <div id="tab-calculator" class="tab-content space-y-3">
-                <!-- Calculator header -->
-                <div class="ps-card rounded-2xl p-3.5 space-y-2">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-2xl">💊</span>
-                        <div>
-                            <h2 class="font-serif-ed font-bold text-xl">Pediatric Dosage Calculator</h2>
-                            <p class="text-xs ps-muted">Accurate single-dose calculation based on child weight</p>
+                <!-- Calculator header with interactive Weight Slider -->
+                <div class="ps-card rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-2xl">💊</span>
+                            <div>
+                                <h2 class="font-serif-ed font-bold text-xl">Instant Dosage Calculator</h2>
+                                <p class="text-xs ps-muted">Slide to your child's weight for exact syringe ml</p>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Weight input -->
-                    <div class="pt-2">
-                        <label class="block text-xs font-semibold mb-1">Child's weight:</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="number" step="0.5" id="dedicatedCalcWeight" oninput="runDedicatedCalculation()" placeholder="19" class="ps-input flex-1 rounded-xl px-3 py-2.5 text-lg font-bold text-teal-400">
-                            <span class="font-bold text-sm">kg</span>
-                            <button onclick="syncWeightFromChild()" class="ps-subcard px-3 py-2.5 rounded-xl text-xs font-semibold hover:border-teal-400">From Profile</button>
+                    <!-- Weight stepper + slider -->
+                    <div class="ps-subcard rounded-2xl p-3 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <button type="button" onclick="adjustQuickWeight(-0.5)" class="w-10 h-10 rounded-xl ps-card font-bold text-lg flex items-center justify-center active:scale-90">−</button>
+                            <div class="flex items-baseline space-x-1">
+                                <input type="number" step="0.5" id="dedicatedCalcWeight" oninput="onCalcWeightInput(this.value)" placeholder="16" class="bg-transparent text-center font-serif-ed font-bold text-3xl w-24 text-teal-400 focus:outline-none">
+                                <span id="calcWeightUnitLabel" class="font-bold text-sm ps-muted">kg</span>
+                            </div>
+                            <button type="button" onclick="adjustQuickWeight(0.5)" class="w-10 h-10 rounded-xl ps-card font-bold text-lg flex items-center justify-center active:scale-90">+</button>
+                        </div>
+                        <input type="range" id="calcWeightSlider" min="4" max="50" step="0.5" value="16" oninput="onCalcWeightSlider(this.value)" class="w-full accent-teal-400 cursor-pointer h-2 rounded-lg">
+                    </div>
+
+                    <!-- Side-by-Side Instant Cards for Ibuprofen & Paracetamol -->
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div class="ps-subcard rounded-2xl p-3 border border-teal-500/30 space-y-1.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-teal-400 block">Ibuprofen (100mg/5ml)</span>
+                            <div id="instantIbuMl" class="font-serif-ed font-bold text-2xl text-white">8.0 ml</div>
+                            <p id="instantIbuMg" class="text-[10px] ps-muted">160 mg · every 6–8h (max 3/day)</p>
+                            <button type="button" onclick="quickLogCalculatedMed('ibu')" class="w-full ps-btn-accent font-bold py-1.5 rounded-xl text-[11px] mt-1 active:scale-95 transition">
+                                + Log Ibuprofen
+                            </button>
+                        </div>
+                        <div class="ps-subcard rounded-2xl p-3 border border-sky-500/30 space-y-1.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-sky-400 block">Paracetamol (120mg/5ml)</span>
+                            <div id="instantParaMl" class="font-serif-ed font-bold text-2xl text-white">10.0 ml</div>
+                            <p id="instantParaMg" class="text-[10px] ps-muted">240 mg · every 4–6h (max 4/day)</p>
+                            <button type="button" onclick="quickLogCalculatedMed('para')" class="w-full bg-sky-400 text-[#0b111a] font-bold py-1.5 rounded-xl text-[11px] mt-1 active:scale-95 transition">
+                                + Log Paracetamol
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1328,13 +1367,24 @@
             const presetsC = [37.5, 38.0, 38.5, 39.0];
             presetsC.forEach((c, idx) => {
                 const qb = document.getElementById(`quickTempBtn${idx}`);
-                if (qb) qb.innerText = tempUnit === 'F' ? `${cToF(c)}°F` : `${c.toFixed(1)}°C`;
+                if (qb) qb.innerText = tempUnit === 'F' ? `${cToF(c)}°` : `${c.toFixed(1)}°`;
             });
+            const qbBase = document.getElementById('quickTempBtnBase');
+            if (qbBase) qbBase.innerText = tempUnit === 'F' ? `${cToF(36.6)}°` : '36.6°';
+            const qbHigh = document.getElementById('quickTempBtnHigh');
+            if (qbHigh) qbHigh.innerText = tempUnit === 'F' ? `${cToF(39.5)}°` : '39.5°';
 
             const tLabel = document.getElementById('inputTempLabel');
             const tInput = document.getElementById('inputTemp');
-            if (tLabel) tLabel.innerText = `Temperature (°${tempUnit})*`;
-            if (tInput) tInput.placeholder = tempUnit === 'F' ? '100.8' : '38.2';
+            if (tLabel) tLabel.innerText = `°${tempUnit}`;
+            if (tInput) {
+                const slider = document.getElementById('tempRangeSlider');
+                const curC = slider ? parseFloat(slider.value) || 37.5 : 37.5;
+                tInput.value = tempUnit === 'F' ? cToF(curC) : curC.toFixed(1);
+            }
+
+            const cwLabel = document.getElementById('calcWeightUnitLabel');
+            if (cwLabel) cwLabel.innerText = weightUnit;
 
             const gwLabel = document.getElementById('growthWeightLabel');
             if (gwLabel) gwLabel.innerText = `Weight (${weightUnit})`;
@@ -1589,18 +1639,37 @@
         }
 
         // ==========================================
-        // ONBOARDING: REGISTER -> CHILD -> DIARY
+        // INSTANT LAUNCH (NO FORCED ONBOARDING WALLS)
         // ==========================================
         function checkOnboardingFlow() {
             if (!currentUser) {
-                document.getElementById('onboardingAuthScreen').classList.remove('hidden');
-                return;
+                currentUser = { id: "guest_" + Date.now(), username: "parent", name: "Parent" };
+                authToken = authToken || "guest_token";
+                localStorage.setItem('ps_token', authToken);
+                localStorage.setItem('ps_user', JSON.stringify(currentUser));
             }
-            if (children.length === 0) {
-                document.getElementById('onboardingChildScreen').classList.remove('hidden');
-                return;
+            if (!children || children.length === 0) {
+                const defaultChild = ensureChildFields({
+                    id: "c_" + Date.now(),
+                    familyCode: "FAM-" + Math.floor(1000 + Math.random() * 9000),
+                    name: "My Child",
+                    age: 4,
+                    weight: 16,
+                    height: 104,
+                    allergies: "None",
+                    doctorPhone: "",
+                    episode: "Fever & Symptom Log",
+                    points48h: [],
+                    reminders: []
+                });
+                children = [defaultChild];
+                currentChildIdx = 0;
+                saveLocalState();
             }
+            document.getElementById('onboardingAuthScreen').classList.add('hidden');
+            document.getElementById('onboardingChildScreen').classList.add('hidden');
             renderApp();
+            runDedicatedCalculation();
             syncWithBackend();
         }
 
@@ -1835,9 +1904,24 @@
             // Header and child card
             ensureChildFields(child);
             document.getElementById('headerChildInitial').innerText = child.name.charAt(0).toUpperCase();
-            document.getElementById('headerChildName').innerText = `${child.name}, ${child.age} yr`;
-            document.getElementById('childHeadline').innerText = child.episode || "Observation";
-            document.getElementById('childSubline').innerText = `${child.name} · ${child.age} yr · ${formatWeight(child.weight)}${child.allergies && child.allergies !== 'None' && child.allergies !== 'Нет' ? ' · ⚠️ ' + child.allergies : ''}`;
+            document.getElementById('headerChildName').innerText = child.name;
+            const hwLabel = document.getElementById('headerWeightLabel');
+            if (hwLabel) hwLabel.innerText = formatWeight(child.weight);
+            document.getElementById('childHeadline').innerText = child.episode || "Doctor Report & Summary";
+            document.getElementById('childSubline').innerText = `${child.name} · ${child.age} yr · ${formatWeight(child.weight)} (tap −/+ above to adjust weight)`;
+
+            // Update 1-Tap Medication Dose spans on the Home Logger
+            const ibuMl = +(child.weight * 0.5).toFixed(1);
+            const paraMl = +(child.weight * 0.625).toFixed(1);
+            const qIbu = document.getElementById('quickIbuDoseSpan');
+            const qPara = document.getElementById('quickParaDoseSpan');
+            if (qIbu) qIbu.innerText = `${ibuMl} ml`;
+            if (qPara) qPara.innerText = `${paraMl} ml`;
+            if (selectedQuickMedType === 'ibu') {
+                document.getElementById('inputMed').value = `Ibuprofen ${ibuMl} ml`;
+            } else if (selectedQuickMedType === 'para') {
+                document.getElementById('inputMed').value = `Paracetamol ${paraMl} ml`;
+            }
 
             // 48-hour summary
             const recentPts = child.points48h.filter(p => getEntryHoursAgo(p) <= 48);
@@ -2228,8 +2312,144 @@
         // ==========================================
         // QUICK ACTIONS, TAGS, HYDRATION & DIARY
         // ==========================================
+        let selectedQuickMedType = 'none';
+
+        function showQuickToast(msg) {
+            const t = document.getElementById('quickToast');
+            if (!t) return;
+            t.innerText = msg;
+            t.classList.remove('opacity-0');
+            t.classList.add('opacity-100');
+            clearTimeout(window._chronoToastTimer);
+            window._chronoToastTimer = setTimeout(() => {
+                t.classList.remove('opacity-100');
+                t.classList.add('opacity-0');
+            }, 2400);
+        }
+
+        function adjustQuickWeight(deltaKg) {
+            const child = getActiveChild();
+            if (!child) return;
+            child.weight = Math.max(3, Math.min(80, +(child.weight + deltaKg).toFixed(1)));
+            saveLocalState();
+            syncChildMeta(child);
+            const calcInput = document.getElementById('dedicatedCalcWeight');
+            if (calcInput) calcInput.value = weightUnit === 'lb' ? kgToLb(child.weight) : child.weight;
+            const calcSlider = document.getElementById('calcWeightSlider');
+            if (calcSlider) calcSlider.value = child.weight;
+            renderApp();
+            runDedicatedCalculation();
+            showQuickToast(`⚖️ Weight set to ${formatWeight(child.weight)}`);
+        }
+
+        function promptQuickRenameChild() {
+            const child = getActiveChild();
+            if (!child) return;
+            const newName = prompt("Child's name:", child.name);
+            if (newName && newName.trim()) {
+                child.name = newName.trim();
+                const newAge = prompt("Child's age (years):", child.age);
+                if (newAge !== null && !isNaN(parseInt(newAge, 10))) {
+                    child.age = parseInt(newAge, 10);
+                }
+                saveLocalState();
+                syncChildMeta(child);
+                renderApp();
+                showQuickToast(`👶 Profile updated: ${child.name}`);
+            }
+        }
+
+        function updateTempSeverityHint(valC) {
+            const hint = document.getElementById('tempSeverityHint');
+            const input = document.getElementById('inputTemp');
+            if (!hint || !input) return;
+            if (valC >= 39.0) {
+                hint.innerText = '🔥 High Fever (≥ 39.0 °C)';
+                hint.className = 'text-[10px] font-bold text-rose-400 block';
+                input.className = 'bg-transparent text-center font-serif-ed font-bold text-4xl w-28 focus:outline-none text-rose-400';
+            } else if (valC >= 38.0) {
+                hint.innerText = '⚠️ Moderate Fever (≥ 38.0 °C)';
+                hint.className = 'text-[10px] font-bold text-amber-300 block';
+                input.className = 'bg-transparent text-center font-serif-ed font-bold text-4xl w-28 focus:outline-none text-amber-300';
+            } else if (valC >= 37.2) {
+                hint.innerText = 'Subfebrile / Low-grade (37.2–37.9 °C)';
+                hint.className = 'text-[10px] font-semibold text-teal-300 block';
+                input.className = 'bg-transparent text-center font-serif-ed font-bold text-4xl w-28 focus:outline-none text-teal-300';
+            } else {
+                hint.innerText = '✅ Normal Temperature';
+                hint.className = 'text-[10px] font-semibold text-emerald-400 block';
+                input.className = 'bg-transparent text-center font-serif-ed font-bold text-4xl w-28 focus:outline-none text-emerald-400';
+            }
+        }
+
         function setQuickTemp(valC) {
-            document.getElementById('inputTemp').value = tempUnit === 'F' ? cToF(valC) : valC;
+            const slider = document.getElementById('tempRangeSlider');
+            if (slider) slider.value = valC;
+            document.getElementById('inputTemp').value = tempUnit === 'F' ? cToF(valC) : valC.toFixed(1);
+            updateTempSeverityHint(valC);
+        }
+
+        function stepQuickTemp(delta) {
+            const slider = document.getElementById('tempRangeSlider');
+            const curC = slider ? parseFloat(slider.value) || 37.5 : 37.5;
+            const nextC = Math.max(35.5, Math.min(41.5, +(curC + delta).toFixed(1)));
+            setQuickTemp(nextC);
+        }
+
+        function onTempSliderInput(val) {
+            const valC = parseFloat(val) || 37.5;
+            document.getElementById('inputTemp').value = tempUnit === 'F' ? cToF(valC) : valC.toFixed(1);
+            updateTempSeverityHint(valC);
+        }
+
+        function syncTempSliderFromInput() {
+            const raw = parseFloat(document.getElementById('inputTemp').value);
+            if (isNaN(raw)) return;
+            const valC = tempUnit === 'F' ? fToC(raw) : raw;
+            const slider = document.getElementById('tempRangeSlider');
+            if (slider) slider.value = Math.max(35.5, Math.min(41.0, valC));
+            updateTempSeverityHint(valC);
+        }
+
+        function selectQuickMedPill(type) {
+            selectedQuickMedType = type;
+            const child = getActiveChild();
+            const weight = child ? child.weight : 16;
+            const ibuMl = +(weight * 0.5).toFixed(1);
+            const paraMl = +(weight * 0.625).toFixed(1);
+
+            const bNone = document.getElementById('quickMedNone');
+            const bIbu = document.getElementById('quickMedIbu');
+            const bPara = document.getElementById('quickMedPara');
+            const medInput = document.getElementById('inputMed');
+
+            if (bNone) bNone.className = type === 'none'
+                ? 'ps-subcard border-2 border-teal-400 py-2 px-2 rounded-xl font-bold text-[11px] text-center transition'
+                : 'ps-subcard border border-transparent py-2 px-2 rounded-xl font-bold text-[11px] text-center transition opacity-75';
+            if (bIbu) bIbu.className = type === 'ibu'
+                ? 'ps-subcard border-2 border-teal-400 bg-teal-500/15 py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition'
+                : 'ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition';
+            if (bPara) bPara.className = type === 'para'
+                ? 'ps-subcard border-2 border-sky-400 bg-sky-500/15 py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition'
+                : 'ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition';
+
+            if (medInput) {
+                if (type === 'ibu') medInput.value = `Ibuprofen ${ibuMl} ml`;
+                else if (type === 'para') medInput.value = `Paracetamol ${paraMl} ml`;
+                else medInput.value = '';
+            }
+        }
+
+        function toggleQuickDrinkChip(btn, text) {
+            btn.classList.toggle('active');
+            const drinkInput = document.getElementById('inputDrink');
+            if (btn.classList.contains('active')) {
+                btn.classList.add('border', 'border-sky-400', 'bg-sky-500/20');
+                if (drinkInput) drinkInput.value = text;
+            } else {
+                btn.classList.remove('border', 'border-sky-400', 'bg-sky-500/20');
+                if (drinkInput && drinkInput.value === text) drinkInput.value = '';
+            }
         }
 
         function toggleSymptomChip(btn, text) {
@@ -2247,18 +2467,17 @@
 
         async function handleDiarySubmit(e) {
             e.preventDefault();
-            const child = getActiveChild();
+            let child = getActiveChild();
             if (!child) {
-                alert("Please add a child profile first!");
-                openChildModal();
-                return;
+                checkOnboardingFlow();
+                child = getActiveChild();
             }
 
             const rawTemp = parseFloat(document.getElementById('inputTemp').value);
-            const tVal = !isNaN(rawTemp) ? (tempUnit === 'F' ? fToC(rawTemp) : rawTemp) : 37.0;
+            const tVal = !isNaN(rawTemp) ? (tempUnit === 'F' ? fToC(rawTemp) : rawTemp) : 37.5;
             const drink = document.getElementById('inputDrink').value.trim() || null;
             const med = document.getElementById('inputMed').value.trim() || null;
-            const note = document.getElementById('inputNote').value.trim() || "Reading";
+            const note = document.getElementById('inputNote').value.trim() || (tVal >= 38.0 ? "Fever check" : "Routine check");
             const author = currentUser ? currentUser.name : "Parent";
             const nowMs = Date.now();
 
@@ -2289,6 +2508,8 @@
             }
 
             document.querySelectorAll('.symptom-chip').forEach(b => b.classList.remove('active'));
+            const dBtn = document.getElementById('quickDrinkChipBtn');
+            if (dBtn) dBtn.classList.remove('active', 'border', 'border-sky-400', 'bg-sky-500/20');
 
             if (authToken && authToken !== 'guest_token' && !child.id.startsWith("c_")) {
                 fetch(`/api/children/${child.id}/entries`, {
@@ -2301,8 +2522,12 @@
                 }).catch(() => {});
             }
 
-            e.target.reset();
+            document.getElementById('inputNote').value = '';
+            document.getElementById('inputDrink').value = '';
+            selectQuickMedPill('none');
+            setQuickTemp(tVal);
             renderApp();
+            showQuickToast(`✅ Logged ${formatTemp(tVal)}${med ? ' + ' + med : ''}!`);
         }
 
         function quickLogFluid(ml) {
@@ -2613,16 +2838,75 @@
             const child = getActiveChild();
             if (child && child.weight) {
                 document.getElementById('dedicatedCalcWeight').value = weightUnit === 'lb' ? kgToLb(child.weight) : child.weight;
+                const slider = document.getElementById('calcWeightSlider');
+                if (slider) slider.value = child.weight;
                 runDedicatedCalculation();
-            } else {
-                alert("No weight specified in profile");
             }
+        }
+
+        function onCalcWeightInput(val) {
+            const raw = parseFloat(val);
+            if (isNaN(raw) || raw <= 0) return;
+            const kg = weightUnit === 'lb' ? lbToKg(raw) : raw;
+            const slider = document.getElementById('calcWeightSlider');
+            if (slider) slider.value = Math.max(4, Math.min(50, kg));
+            const child = getActiveChild();
+            if (child) {
+                child.weight = kg;
+                saveLocalState();
+                syncChildMeta(child);
+                renderApp();
+            }
+            runDedicatedCalculation();
+        }
+
+        function onCalcWeightSlider(valKg) {
+            const kg = parseFloat(valKg) || 16;
+            document.getElementById('dedicatedCalcWeight').value = weightUnit === 'lb' ? kgToLb(kg) : kg;
+            const child = getActiveChild();
+            if (child) {
+                child.weight = kg;
+                saveLocalState();
+                syncChildMeta(child);
+                renderApp();
+            }
+            runDedicatedCalculation();
+        }
+
+        function quickLogCalculatedMed(type) {
+            const child = getActiveChild();
+            const weight = child ? child.weight : 16;
+            const medStr = type === 'ibu'
+                ? `Ibuprofen ${+(weight * 0.5).toFixed(1)} ml`
+                : `Paracetamol ${+(weight * 0.625).toFixed(1)} ml`;
+            switchTab('diary');
+            selectQuickMedPill(type);
+            showQuickToast(`💊 Selected ${medStr} — tap Log Now!`);
         }
 
         function runDedicatedCalculation() {
             let rawWeight = parseFloat(document.getElementById('dedicatedCalcWeight').value);
-            if (isNaN(rawWeight) || rawWeight <= 0) rawWeight = weightUnit === 'lb' ? 33 : 15;
+            if (isNaN(rawWeight) || rawWeight <= 0) {
+                const child = getActiveChild();
+                const baseKg = child && child.weight ? child.weight : 16;
+                rawWeight = weightUnit === 'lb' ? kgToLb(baseKg) : baseKg;
+                document.getElementById('dedicatedCalcWeight').value = rawWeight;
+            }
             const weight = weightUnit === 'lb' ? lbToKg(rawWeight) : rawWeight;
+
+            // Update side-by-side instant cards
+            const ibuMl = +(weight * 0.5).toFixed(1);
+            const ibuMg = Math.round(weight * 10);
+            const paraMl = +(weight * 0.625).toFixed(1);
+            const paraMg = Math.round(weight * 15);
+            const elIbuMl = document.getElementById('instantIbuMl');
+            const elIbuMg = document.getElementById('instantIbuMg');
+            const elParaMl = document.getElementById('instantParaMl');
+            const elParaMg = document.getElementById('instantParaMg');
+            if (elIbuMl) elIbuMl.innerText = `${ibuMl} ml`;
+            if (elIbuMg) elIbuMg.innerText = `${ibuMg} mg · every 6–8h (max 3/day)`;
+            if (elParaMl) elParaMl.innerText = `${paraMl} ml`;
+            if (elParaMg) elParaMg.innerText = `${paraMg} mg · every 4–6h (max 4/day)`;
 
             const medType = document.getElementById('feverMedSelect').value;
 
@@ -3566,8 +3850,8 @@
             if (pwaRow) pwaRow.classList.add('hidden');
         }
 
-        // START APPLICATION
-        initSplashScreen();
+        // START APPLICATION IMMEDIATELY (ZERO FRICTION)
+        checkOnboardingFlow();
     </script>
 </body>
 </html>
