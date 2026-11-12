@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: chrono
+    name: chrono-clinical
     runtime: node
     plan: free
     region: frankfurt
