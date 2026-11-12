@@ -1,27 +1,27 @@
-# 🏥 PediaSense — Клинический дневник болезни ребёнка
+# 🏥 Chrono — Clinical Child Symptom Diary
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/stepanbebenin-alt/pediasense)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/stepanbebenin-alt/chrono)
 
-Современное, лёгкое и быстрое приложение для контроля температуры, ведения дневника болезни ребёнка и формирования 48-часового отчёта для врача-педиатра.
+A modern, lightweight, and fast app for fever tracking, keeping a child's illness diary, and generating 48-hour clinical reports for your pediatrician.
 
-Готово к **мгновенному бесплатному развёртыванию на Render (render.com)**, а также к локальному запуску на **Node.js (JS)** или **Rust**!
+Ready for **instant free deployment on Render (render.com)** as well as local execution with **Node.js (JS)** or **Rust**!
 
 ---
 
-## 🚀 Развёртывание на Render в 1 клик
+## 🚀 1-Click Deploy to Render
 
-Просто нажмите кнопку выше **«Deploy to Render»** или выполните шаги:
+Click the **Deploy to Render** button above or follow these steps:
 
-1. Зайдите на **[dashboard.render.com](https://dashboard.render.com/)**.
-2. Нажмите **New +** → **Blueprint**.
-3. Выберите репозиторий `pediasense` (или укажите `https://github.com/stepanbebenin-alt/pediasense`).
-4. Нажмите **Apply** — Render прочитает `render.yaml`, создаст бесплатный веб-сервис и выдаст постоянную ссылку `https://pediasense.onrender.com` с SSL-сертификатом!
+1. Go to **[dashboard.render.com](https://dashboard.render.com/)**.
+2. Click **New +** → **Blueprint**.
+3. Select the `chrono` repository (or enter `https://github.com/stepanbebenin-alt/chrono`).
+4. Click **Apply** — Render will read `render.yaml`, create a free web service, and provide an HTTPS URL `https://chrono.onrender.com`!
 
-Файл конфигурации `render.yaml`:
+`render.yaml` configuration:
 ```yaml
 services:
   - type: web
-    name: pediasense
+    name: chrono
     runtime: node
     plan: free
     region: frankfurt
@@ -37,34 +37,34 @@ services:
 
 ---
 
-## 💻 Локальный запуск на компьютере
+## 💻 Running Locally
 
-### Вариант А: Запуск на Node.js (JavaScript) — самый простой
-В папке проекта запустите файл **`START_LOCAL_SERVER.bat`** (или команду `node server.js`).
-Сервер моментально запустится на `http://localhost:3000`.
+### Option A: Run with Node.js (JavaScript) — easiest
+Run **`START_LOCAL_SERVER.bat`** in the project folder (or `node server.js`).
+The server starts immediately at `http://localhost:3000`.
 
-### Вариант Б: Запуск на Rust (Axum + Tokio)
-Если у вас установлен Rust:
+### Option B: Run with Rust (Axum + Tokio)
+If you have Rust installed:
 ```bash
 cargo run --release
 ```
-(или запустите **`START_RUST_SERVER.bat`**).
+(or run **`START_RUST_SERVER.bat`**).
 
-### Вариант В: Автономный запуск в браузере (без серверов)
-Просто откройте двойным кликом файл **`index.html`** (или `pediasense_app.html` на Рабочем столе) в любом браузере! Приложение полностью сохраняет данные в `localStorage`.
+### Option C: Standalone Browser Mode (no server required)
+Double-click **`static/index.html`** (or `index.html`) in any browser! All data is stored locally in `localStorage`.
 
 ---
 
-## ✨ Возможности приложения
+## ✨ Key Features
 
-- 🔐 **Экран регистрации и авторизации** с поддержкой быстрого входа в 1 клик (Гость / Демо).
-- 🎨 **Выбор из 4 выверенных тем оформления**:
-  - 🌑 **Тёмная ночь** (*Midnight Slate*) — мягкий тёмный стиль, не слепит глаза ночью в детской.
-  - ☀️ **Светлая клиника** (*Clinical Light*) — чистый медицинский стиль.
-  - 🌿 **Мятный покой** (*Calm Mint*) — успокаивающий изумрудный тон.
-  - 🌸 **Нежная пастель** (*Soft Warmth*) — тёплый, пудровый стиль.
-- 👶 **Создание профилей детей** (имя, возраст, вес в кг для расчёта жаропонижающих, диагноз/жалобы) и переключение между ними в 1 клик.
-- 📊 **Интерактивный 48-часовой график** температуры и лекарств.
-- ⏱️ **Быстрая фиксация замеров** с кнопками быстрых температур (`37.5°`, `38.0°`, `38.5°`, `39.0°`).
-- 📄 **QR-код и генератор PDF-отчёта** для врача-педиатра на приёме.
-- 🚨 **SOS 112** с готовой шпаргалкой диспетчеру скорой помощи.
+- 🔐 **Registration & Sign-In Screen** with 1-click guest/demo access.
+- 🎨 **4 High-Contrast Color Themes**:
+  - 🌑 **Dark** (*Midnight Slate*) — gentle dark mode that won't glare at night.
+  - ☀️ **Light** (*Clinical Light*) — clean medical daylight interface.
+  - 🌿 **Mint** (*Calm Mint*) — soothing emerald tone.
+  - 🌸 **Warm** (*Soft Warmth*) — soft, warm pastel palette.
+- 👶 **Child Profiles** (name, age, exact weight in kg for antipyretic dosing, episode/concerns) with 1-click switching.
+- 📊 **Interactive 48-Hour Chart** of temperature and medications.
+- ⏱️ **Quick Entry** with one-tap temperature buttons (`37.5°`, `38.0°`, `38.5°`, `39.0°`) and symptom chips.
+- 📄 **QR Code & PDF Report Generator** for pediatrician visits.
+- 🚨 **SOS Emergency (911 / 112)** with clinical red flags and a ready-to-read dispatcher summary.
