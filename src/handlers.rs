@@ -10,7 +10,8 @@ use uuid::Uuid;
 use crate::auth::{generate_token, hash_password, verify_password};
 use crate::models::{
     AddEntryRequest, AddReminderRequest, ApiResponse, AuthResponse, Child, CreateChildRequest,
-    DiaryEntry, LoginRequest, RegisterRequest, Reminder, UpdateThemeRequest, User,
+    DiaryEntry, JoinFamilyRequest, LoginRequest, RegisterRequest, Reminder, UpdateChildMetaRequest,
+    UpdateThemeRequest, User,
 };
 use crate::state::{AppState, SharedState};
 
@@ -33,7 +34,7 @@ pub async fn register(
     if username.is_empty() || payload.password.is_empty() || name.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ApiResponse::err("Пожалуйста, заполните все поля")),
+            Json(ApiResponse::err("Please fill in all fields")),
         ));
     }
 
@@ -42,7 +43,7 @@ pub async fn register(
     if data.users_by_username.contains_key(&username) {
         return Err((
             StatusCode::CONFLICT,
-            Json(ApiResponse::err("Пользователь с таким логином уже существует")),
+            Json(ApiResponse::err("A user with this username already exists")),
         ));
     }
 
@@ -56,31 +57,38 @@ pub async fn register(
         created_at: Utc::now().to_rfc3339(),
     };
 
-    // Создаем начальный профиль ребенка для быстрого старта
+    // Create an initial child profile for a quick start
     let default_child_id = Uuid::new_v4().to_string();
     let default_child = Child {
         id: default_child_id.clone(),
         user_id: user_id.clone(),
-        name: "Мой ребёнок".to_string(),
+        family_code: Some("FAM-7942".to_string()),
+        name: "My Child".to_string(),
         age: 5,
         weight: 19.0,
-        episode: "Начало наблюдения".to_string(),
+        height: Some(110.0),
+        allergies: Some("None".to_string()),
+        doctor_phone: None,
+        episode: "Observation started".to_string(),
         points48h: vec![DiaryEntry {
             id: Uuid::new_v4().to_string(),
             temp: 36.8,
-            drink: Some("150 мл".to_string()),
+            drink: Some("150 ml".to_string()),
             med: None,
-            note: "Профиль успешно создан. Зафиксируйте первое измерение.".to_string(),
+            note: "Profile created successfully. Log your first measurement.".to_string(),
+            author: Some(name.to_string()),
             hours_ago: 0.0,
-            timestamp: "Только что".to_string(),
+            created_at_ms: Some(Utc::now().timestamp_millis() as u64),
+            timestamp: "Just now".to_string(),
         }],
         reminders: vec![Reminder {
             id: Uuid::new_v4().to_string(),
-            title: "Контроль температуры и обильное питьё".to_string(),
-            time: "Каждые 3 часа".to_string(),
+            title: "Monitor temperature and keep child hydrated".to_string(),
+            time: "Every 3 hours".to_string(),
             done: false,
         }],
         created_at: Utc::now().to_rfc3339(),
+        ..Default::default()
     };
 
     let token = generate_token();
@@ -112,7 +120,7 @@ pub async fn login(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Неверный логин или пароль")),
+                Json(ApiResponse::err("Invalid username or password")),
             ));
         }
     };
@@ -122,7 +130,7 @@ pub async fn login(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Пользователь не найден")),
+                Json(ApiResponse::err("User not found")),
             ));
         }
     };
@@ -130,7 +138,7 @@ pub async fn login(
     if !verify_password(&payload.password, &user.password_hash) {
         return Err((
             StatusCode::UNAUTHORIZED,
-            Json(ApiResponse::err("Неверный логин или пароль")),
+            Json(ApiResponse::err("Invalid username or password")),
         ));
     }
 
@@ -166,7 +174,7 @@ pub async fn logout(
             }
         }
     }
-    Json(ApiResponse::ok("Вы успешно вышли"))
+    Json(ApiResponse::ok("Signed out successfully"))
 }
 
 // GET /api/me
@@ -179,7 +187,7 @@ pub async fn get_me(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -190,7 +198,7 @@ pub async fn get_me(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Пользователь не найден")),
+                Json(ApiResponse::err("User not found")),
             ));
         }
     };
@@ -221,7 +229,7 @@ pub async fn update_theme(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -234,7 +242,7 @@ pub async fn update_theme(
     } else {
         Err((
             StatusCode::NOT_FOUND,
-            Json(ApiResponse::err("Пользователь не найден")),
+            Json(ApiResponse::err("User not found")),
         ))
     }
 }
@@ -250,7 +258,7 @@ pub async fn create_child(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -259,14 +267,14 @@ pub async fn create_child(
     if name.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ApiResponse::err("Имя ребенка обязательно")),
+            Json(ApiResponse::err("Child's name is required")),
         ));
     }
 
     let mut data = state.data.write().await;
     let child_id = Uuid::new_v4().to_string();
     let episode = if payload.episode.trim().is_empty() {
-        "Под наблюдением".to_string()
+        "Under observation".to_string()
     } else {
         payload.episode.trim().to_string()
     };
@@ -274,26 +282,33 @@ pub async fn create_child(
     let new_child = Child {
         id: child_id.clone(),
         user_id: user_id.clone(),
+        family_code: Some(format!("FAM-{}", &Uuid::new_v4().to_string()[..4].to_uppercase())),
         name: name.to_string(),
         age: payload.age,
         weight: payload.weight,
+        height: payload.height.or(Some(110.0)),
+        allergies: payload.allergies.or_else(|| Some("None".to_string())),
+        doctor_phone: payload.doctor_phone,
         episode,
         points48h: vec![DiaryEntry {
             id: Uuid::new_v4().to_string(),
             temp: 36.6,
-            drink: Some("150 мл".to_string()),
+            drink: Some("150 ml".to_string()),
             med: None,
-            note: "Профиль создан. Начните вести дневник.".to_string(),
+            note: "Profile created. Start tracking measurements.".to_string(),
+            author: None,
             hours_ago: 0.0,
-            timestamp: "Только что".to_string(),
+            created_at_ms: Some(Utc::now().timestamp_millis() as u64),
+            timestamp: "Just now".to_string(),
         }],
         reminders: vec![Reminder {
             id: Uuid::new_v4().to_string(),
-            title: "Измерить температуру".to_string(),
-            time: "Каждые 3–4 часа".to_string(),
+            title: "Measure temperature".to_string(),
+            time: "Every 3–4 hours".to_string(),
             done: false,
         }],
         created_at: Utc::now().to_rfc3339(),
+        ..Default::default()
     };
 
     data.children.insert(child_id.clone(), new_child.clone());
@@ -307,6 +322,89 @@ pub async fn create_child(
     Ok(Json(ApiResponse::ok(new_child)))
 }
 
+// PUT /api/children/:id/meta
+pub async fn update_child_meta(
+    Path(child_id): Path<String>,
+    headers: HeaderMap,
+    State(state): State<SharedState>,
+    Json(payload): Json<UpdateChildMetaRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ApiResponse<String>>)> {
+    let _user_id = match get_auth_user_id(&headers, &state).await {
+        Some(id) => id,
+        None => {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiResponse::err("Authentication required")),
+            ));
+        }
+    };
+
+    let mut data = state.data.write().await;
+    let child = match data.children.get_mut(&child_id) {
+        Some(c) => c,
+        None => {
+            return Err((
+                StatusCode::NOT_FOUND,
+                Json(ApiResponse::err("Child profile not found")),
+            ));
+        }
+    };
+
+    if let Some(w) = payload.weight { child.weight = w; }
+    if let Some(h) = payload.height { child.height = Some(h); }
+    if let Some(a) = payload.age { child.age = a; }
+    if let Some(ep) = payload.episode { child.episode = ep; }
+    if let Some(u) = payload.last_urine_ms { child.last_urine_ms = Some(u); }
+    if let Some(logs) = payload.urine_logs { child.urine_logs = logs; }
+    if let Some(vacs) = payload.vaccines { child.vaccines = vacs; }
+    if let Some(arch) = payload.archived_episodes { child.archived_episodes = arch; }
+
+    let updated = child.clone();
+    AppState::save_to_disk(&data);
+    Ok(Json(ApiResponse::ok(updated)))
+}
+
+// POST /api/family/join
+pub async fn join_family(
+    headers: HeaderMap,
+    State(state): State<SharedState>,
+    Json(payload): Json<JoinFamilyRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ApiResponse<String>>)> {
+    let user_id = match get_auth_user_id(&headers, &state).await {
+        Some(id) => id,
+        None => {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiResponse::err("Authentication required")),
+            ));
+        }
+    };
+
+    let code = payload.code.trim().to_uppercase();
+    let mut data = state.data.write().await;
+
+    let matched = data
+        .children
+        .values()
+        .find(|c| c.family_code.as_deref().unwrap_or("").to_uppercase() == code)
+        .cloned();
+
+    let Some(child) = matched else {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiResponse::err("Family code not found")),
+        ));
+    };
+
+    let list = data.children_by_user.entry(user_id).or_default();
+    if !list.contains(&child.id) {
+        list.push(child.id.clone());
+    }
+    AppState::save_to_disk(&data);
+
+    Ok(Json(ApiResponse::ok(child)))
+}
+
 // DELETE /api/children/:id
 pub async fn delete_child(
     Path(child_id): Path<String>,
@@ -318,25 +416,25 @@ pub async fn delete_child(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
 
     let mut data = state.data.write().await;
 
-    // Проверяем, принадлежит ли ребенок текущему пользователю
+    // Check if child belongs to the current user
     if let Some(child) = data.children.get(&child_id) {
         if child.user_id != user_id {
             return Err((
                 StatusCode::FORBIDDEN,
-                Json(ApiResponse::err("Нет доступа к профилю")),
+                Json(ApiResponse::err("Access to profile denied")),
             ));
         }
     } else {
         return Err((
             StatusCode::NOT_FOUND,
-            Json(ApiResponse::err("Профиль ребенка не найден")),
+            Json(ApiResponse::err("Child profile not found")),
         ));
     }
 
@@ -347,7 +445,7 @@ pub async fn delete_child(
 
     AppState::save_to_disk(&data);
 
-    Ok(Json(ApiResponse::ok("Профиль успешно удален")))
+    Ok(Json(ApiResponse::ok("Profile deleted successfully")))
 }
 
 // POST /api/children/:id/entries
@@ -362,7 +460,7 @@ pub async fn add_diary_entry(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -373,19 +471,19 @@ pub async fn add_diary_entry(
         _ => {
             return Err((
                 StatusCode::NOT_FOUND,
-                Json(ApiResponse::err("Ребёнок не найден или нет доступа")),
+                Json(ApiResponse::err("Child not found or access denied")),
             ));
         }
     };
 
-    // Сдвигаем старые точки по времени немного назад
+    // Shift older points slightly back in time
     for p in child.points48h.iter_mut() {
         p.hours_ago = (p.hours_ago + 2.0).min(48.0);
     }
 
     let note_str = payload
         .note
-        .unwrap_or_else(|| "Замер температуры".to_string());
+        .unwrap_or_else(|| "Temperature reading".to_string());
 
     let entry = DiaryEntry {
         id: Uuid::new_v4().to_string(),
@@ -393,8 +491,10 @@ pub async fn add_diary_entry(
         drink: payload.drink.filter(|s| !s.trim().is_empty()),
         med: payload.med.filter(|s| !s.trim().is_empty()),
         note: note_str,
+        author: None,
         hours_ago: 0.0,
-        timestamp: "Только что".to_string(),
+        created_at_ms: Some(payload.created_at_ms.unwrap_or_else(|| Utc::now().timestamp_millis() as u64)),
+        timestamp: "Just now".to_string(),
     };
 
     child.points48h.push(entry.clone());
@@ -414,7 +514,7 @@ pub async fn delete_diary_entry(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -425,7 +525,7 @@ pub async fn delete_diary_entry(
         _ => {
             return Err((
                 StatusCode::NOT_FOUND,
-                Json(ApiResponse::err("Ребёнок не найден или нет доступа")),
+                Json(ApiResponse::err("Child not found or access denied")),
             ));
         }
     };
@@ -433,7 +533,7 @@ pub async fn delete_diary_entry(
     child.points48h.retain(|p| p.id != entry_id);
     AppState::save_to_disk(&data);
 
-    Ok(Json(ApiResponse::ok("Запись удалена")))
+    Ok(Json(ApiResponse::ok("Entry deleted")))
 }
 
 // POST /api/children/:id/reminders
@@ -448,7 +548,7 @@ pub async fn add_reminder(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -459,7 +559,7 @@ pub async fn add_reminder(
         _ => {
             return Err((
                 StatusCode::NOT_FOUND,
-                Json(ApiResponse::err("Ребёнок не найден или нет доступа")),
+                Json(ApiResponse::err("Child not found or access denied")),
             ));
         }
     };
@@ -488,7 +588,7 @@ pub async fn toggle_reminder(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -499,7 +599,7 @@ pub async fn toggle_reminder(
         _ => {
             return Err((
                 StatusCode::NOT_FOUND,
-                Json(ApiResponse::err("Ребёнок не найден или нет доступа")),
+                Json(ApiResponse::err("Child not found or access denied")),
             ));
         }
     };
@@ -512,7 +612,7 @@ pub async fn toggle_reminder(
     } else {
         Err((
             StatusCode::NOT_FOUND,
-            Json(ApiResponse::err("Напоминание не найдено")),
+            Json(ApiResponse::err("Reminder not found")),
         ))
     }
 }
@@ -528,7 +628,7 @@ pub async fn delete_reminder(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiResponse::err("Требуется авторизация")),
+                Json(ApiResponse::err("Authentication required")),
             ));
         }
     };
@@ -539,7 +639,7 @@ pub async fn delete_reminder(
         _ => {
             return Err((
                 StatusCode::NOT_FOUND,
-                Json(ApiResponse::err("Ребёнок не найден или нет доступа")),
+                Json(ApiResponse::err("Child not found or access denied")),
             ));
         }
     };
@@ -547,5 +647,5 @@ pub async fn delete_reminder(
     child.reminders.retain(|r| r.id != reminder_id);
     AppState::save_to_disk(&data);
 
-    Ok(Json(ApiResponse::ok("Напоминание удалено")))
+    Ok(Json(ApiResponse::ok("Reminder deleted")))
 }
