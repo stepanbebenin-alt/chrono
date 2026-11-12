@@ -15,13 +15,13 @@ Click the **Deploy to Render** button above or follow these steps:
 1. Go to **[dashboard.render.com](https://dashboard.render.com/)**.
 2. Click **New +** → **Blueprint**.
 3. Select the `chrono` repository (or enter `https://github.com/stepanbebenin-alt/chrono`).
-4. Click **Apply** — Render will read `render.yaml`, create a free web service, and provide an HTTPS URL `https://chrono.onrender.com`!
+4. Click **Apply** — Render will read `render.yaml`, create a free web service, and provide an HTTPS URL `https://chrono-clinical.onrender.com`!
 
 `render.yaml` configuration:
 ```yaml
 services:
   - type: web
-    name: chrono
+    name: chrono-clinical
     runtime: node
     plan: free
     region: frankfurt
