@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chrono-pwa-v2.10';
+const CACHE_NAME = 'chrono-pwa-v2.11';
 const CORE_ASSETS = [
   '/',
   '/manifest.json'
