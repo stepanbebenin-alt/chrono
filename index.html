@@ -312,7 +312,7 @@
                     C
                 </div>
                 <h2 class="font-bold text-2xl tracking-tight">Chrono</h2>
-                <p class="text-xs rev-muted">Child fever, medicine &amp; family diary</p>
+                <p id="obAuthSubtitle" class="text-xs rev-muted">Child fever, medicine &amp; family diary</p>
             </div>
 
             <div class="grid grid-cols-2 p-1 rounded-full rev-sub text-xs font-bold">
@@ -341,9 +341,12 @@
                 </button>
             </form>
 
-            <div class="text-center pt-1">
-                <button type="button" onclick="handleGuestDemo()" class="text-xs font-semibold hover:opacity-80" style="color:var(--accent-blue-text);">
+            <div class="flex items-center justify-center gap-4 pt-1">
+                <button type="button" id="obAuthGuestBtn" onclick="handleGuestDemo()" class="text-xs font-semibold hover:opacity-80" style="color:var(--accent-blue-text);">
                     Continue as Guest →
+                </button>
+                <button type="button" id="obAuthCancelBtn" onclick="closeAuthModalForSync()" class="hidden text-xs font-semibold rev-muted hover:opacity-80">
+                    Cancel
                 </button>
             </div>
         </div>
@@ -352,8 +355,8 @@
     <!-- ========================================================= -->
     <!-- 3. REVOLUT INITIAL CHILD SETUP                            -->
     <!-- ========================================================= -->
-    <div id="onboardingChildScreen" class="theme-dark fixed inset-0 z-[85] flex items-center justify-center p-5 hidden modal-backdrop">
-        <div class="rev-card rounded-[28px] max-w-sm w-full p-6 space-y-5 shadow-2xl anim-tab">
+    <div id="onboardingChildScreen" class="theme-dark fixed inset-0 z-[85] flex items-center justify-center p-5 hidden modal-backdrop overflow-y-auto">
+        <div class="rev-card rounded-[28px] max-w-sm w-full p-6 space-y-4 shadow-2xl anim-tab my-auto">
             <div class="w-full h-1 rounded-full overflow-hidden rev-sub">
                 <div class="h-full w-2/3 rounded-full" style="background:var(--accent-blue);"></div>
             </div>
@@ -395,6 +398,14 @@
                 <button type="submit" class="w-full rev-pill-primary font-bold py-3.5 rounded-full text-sm shadow-md mt-2">
                     Save &amp; Open Home →
                 </button>
+            </form>
+
+            <form onsubmit="handleInitJoinFamily(event)" class="pt-3 border-t border-white/10 space-y-2 text-xs">
+                <label for="initJoinFamilyCode" class="block font-semibold rev-muted">Already have a partner's Family Code?</label>
+                <div class="flex gap-2">
+                    <input type="text" id="initJoinFamilyCode" placeholder="FAM-7X9K" required class="rev-input flex-1 rounded-xl px-3.5 py-2.5 text-xs font-mono uppercase">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl text-xs font-bold rev-sub shrink-0" style="color:var(--accent-blue-text);">Join</button>
+                </div>
             </form>
         </div>
     </div>
@@ -625,12 +636,15 @@
 
                 <!-- Caregivers & Family Invite Code -->
                 <div class="rev-card rounded-2xl p-4 space-y-3">
-                    <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center justify-between text-xs gap-2">
                         <span class="font-bold uppercase tracking-wide rev-muted">Family Sync (Mom + Dad)</span>
-                        <button type="button" onclick="copyFamilyCode()" class="font-mono font-bold px-2.5 py-1 rounded-full rev-sub hover:opacity-80" style="color:var(--accent-blue-text);" id="currentFamilyCodeDisplay">FAM-????</button>
+                        <button type="button" onclick="copyFamilyCode()" class="font-mono font-bold px-2.5 py-1 rounded-full rev-sub hover:opacity-80 shrink-0" style="color:var(--accent-blue-text);" id="currentFamilyCodeDisplay">FAM-????</button>
+                    </div>
+                    <div id="familySyncBanner" class="rev-sub rounded-xl p-3 text-xs flex items-center justify-between gap-2.5">
+                        <span class="rev-muted">Checking cloud sync...</span>
                     </div>
                     <p class="text-xs rev-muted leading-relaxed">
-                        Share this code so another caregiver sees live temperature, medicine &amp; water updates on their phone.
+                        Share this code so another parent sees live temperature, medicine &amp; water updates on their phone.
                     </p>
                     <div id="familyMembersList" class="space-y-2"></div>
 
@@ -1044,6 +1058,9 @@
         let deferredPwaPrompt = null;
         let pendingDeleteEntryIds = new Set();
         let inFlightEntrySyncCount = 0;
+        let cloudSyncStatus = (authToken && authToken !== 'guest_token' && !String(authToken).startsWith('local_token_')) ? 'connecting' : 'guest';
+        let pendingJoinCode = '';
+        let authCancelAllowed = false;
 
         // UI State (Revolut Navigation, Smooth Transitions & Pickers)
         let activeTab = 'home';
@@ -1372,6 +1389,71 @@
             document.getElementById('obRegisterForm').classList.toggle('hidden', isLogin);
         }
 
+        function openAuthModalForSync(codeToJoin = '') {
+            pendingJoinCode = codeToJoin ? normalizeFamilyCode(codeToJoin) : '';
+            authCancelAllowed = true;
+            const sub = document.getElementById('obAuthSubtitle');
+            if (sub) {
+                sub.innerText = pendingJoinCode
+                    ? `Sign in or create an account to connect with ${pendingJoinCode}`
+                    : 'Sign in or create an account to sync Mom + Dad live';
+            }
+            const cancelBtn = document.getElementById('obAuthCancelBtn');
+            const guestBtn = document.getElementById('obAuthGuestBtn');
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+            if (guestBtn) guestBtn.classList.add('hidden');
+            document.getElementById('onboardingAuthScreen').classList.remove('hidden');
+        }
+
+        function closeAuthModalForSync() {
+            authCancelAllowed = false;
+            pendingJoinCode = '';
+            const cancelBtn = document.getElementById('obAuthCancelBtn');
+            const guestBtn = document.getElementById('obAuthGuestBtn');
+            const sub = document.getElementById('obAuthSubtitle');
+            if (cancelBtn) cancelBtn.classList.add('hidden');
+            if (guestBtn) guestBtn.classList.remove('hidden');
+            if (sub) sub.innerText = 'Child fever, medicine & family diary';
+            document.getElementById('onboardingAuthScreen').classList.add('hidden');
+        }
+
+        async function uploadChildToCloud(localChild) {
+            if (!isCloudSignedIn() || !localChild || !localChild.name) return false;
+            try {
+                const res = await fetch('/api/children', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({
+                        name: localChild.name,
+                        age: localChild.age,
+                        weight: localChild.weight,
+                        height: localChild.height,
+                        episode: localChild.episode,
+                        allergies: localChild.allergies,
+                        doctorPhone: localChild.doctorPhone,
+                        familyCode: localChild.familyCode,
+                        points48h: (localChild.points48h || []).map(p => ({ ...p, _pendingSync: false })),
+                        reminders: localChild.reminders || [],
+                        savedMeds: localChild.savedMeds || [],
+                        urineLogs: localChild.urineLogs || [],
+                        archivedEpisodes: localChild.archivedEpisodes || []
+                    })
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        localChild.id = json.data.id;
+                        localChild.localOnly = false;
+                        if (json.data.familyCode) localChild.familyCode = json.data.familyCode;
+                        if (Array.isArray(json.data.familyMembers)) localChild.familyMembers = json.data.familyMembers;
+                        (localChild.points48h || []).forEach(p => { p._pendingSync = false; });
+                        return true;
+                    }
+                }
+            } catch (err) {}
+            return false;
+        }
+
         async function handleObAuthSubmit(e, mode) {
             e.preventDefault();
             const isLogin = mode === 'login';
@@ -1381,6 +1463,9 @@
             const submitBtn = e.target ? e.target.querySelector('button[type="submit"]') : null;
             const origLabel = submitBtn ? submitBtn.innerText : '';
             if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Please wait...'; }
+
+            const prevWasLocalOrExpired = !isCloudSignedIn() || cloudSyncStatus === 'expired';
+            const prevLocalChildren = prevWasLocalOrExpired ? children.map(c => ensureChildFields({ ...c })) : [];
 
             try {
                 const endpoint = isLogin ? '/api/login' : '/api/register';
@@ -1394,23 +1479,48 @@
                 if (res.ok && json.success) {
                     authToken = json.data.token;
                     currentUser = json.data.user;
-                    children = (json.data.children || []).map(ensureChildFields);
+                    cloudSyncStatus = 'synced';
+                    children = (json.data.children || []).map(c => {
+                        const ec = ensureChildFields(c);
+                        ec.localOnly = false;
+                        return ec;
+                    });
+
+                    // Migrate guest / pre-restart local children into the signed-in account so zero diary data is lost
+                    if (prevLocalChildren.length && children.length === 0) {
+                        for (const lc of prevLocalChildren) {
+                            const ok = await uploadChildToCloud(lc);
+                            children.push(ok ? lc : ensureChildFields({ ...lc, localOnly: true }));
+                        }
+                    }
+
                     localStorage.setItem('ps_token', authToken);
                     localStorage.setItem('ps_user', JSON.stringify(currentUser));
                     saveLocalState();
-                    document.getElementById('onboardingAuthScreen').classList.add('hidden');
+
+                    const joinAfter = pendingJoinCode;
+                    closeAuthModalForSync();
+                    if (joinAfter) {
+                        await joinFamilyByCode(joinAfter, null, null);
+                    }
                     checkOnboardingFlow(true);
+                    showQuickToast(`Signed in as ${currentUser.name}`);
                     return;
                 } else {
                     alert(json.message || 'Sign-in error');
                 }
             } catch (err) {
+                if (authCancelAllowed) {
+                    alert('Could not reach Chrono server right now. Your local diary is untouched — please try again.');
+                    return;
+                }
                 currentUser = { id: 'u_' + Date.now(), username, name, theme: currentTheme };
                 authToken = 'local_token_' + Date.now();
+                cloudSyncStatus = 'local';
                 localStorage.setItem('ps_token', authToken);
                 localStorage.setItem('ps_user', JSON.stringify(currentUser));
                 saveLocalState();
-                document.getElementById('onboardingAuthScreen').classList.add('hidden');
+                closeAuthModalForSync();
                 checkOnboardingFlow(true);
             } finally {
                 if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = origLabel; }
@@ -1420,11 +1530,24 @@
         function handleGuestDemo() {
             currentUser = { id: 'guest_' + Date.now(), username: 'guest', name: 'Parent' };
             authToken = 'guest_token';
+            cloudSyncStatus = 'guest';
             localStorage.setItem('ps_token', authToken);
             localStorage.setItem('ps_user', JSON.stringify(currentUser));
             saveLocalState();
-            document.getElementById('onboardingAuthScreen').classList.add('hidden');
+            closeAuthModalForSync();
             checkOnboardingFlow();
+        }
+
+        async function handleInitJoinFamily(e) {
+            e.preventDefault();
+            const inp = document.getElementById('initJoinFamilyCode');
+            const btn = e.target ? e.target.querySelector('button[type="submit"]') : null;
+            const joined = await joinFamilyByCode(inp ? inp.value : '', btn, inp);
+            if (joined) {
+                document.getElementById('onboardingChildScreen').classList.add('hidden');
+                renderApp();
+                runDedicatedCalculation();
+            }
         }
 
         async function handleInitialChildSubmit(e) {
@@ -1462,9 +1585,12 @@
                         if (json.success && json.data) {
                             newChild.id = json.data.id;
                             newChild.localOnly = false;
+                            cloudSyncStatus = 'synced';
                             if (json.data.familyCode) newChild.familyCode = json.data.familyCode;
                             if (Array.isArray(json.data.familyMembers)) newChild.familyMembers = json.data.familyMembers;
                         }
+                    } else if (res.status === 401) {
+                        cloudSyncStatus = 'expired';
                     }
                 } catch (err) {}
             }
@@ -1481,54 +1607,121 @@
         // ==========================================
         // FAMILY ACCESS & BACKEND SYNC
         // ==========================================
+        function normalizeFamilyCode(raw) {
+            const cleaned = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+            if (!cleaned) return '';
+            if (/^[A-Z0-9]{4}$/.test(cleaned)) return 'FAM-' + cleaned;
+            return cleaned;
+        }
+
+        function copyTextSafe(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopyText(text));
+            }
+            return Promise.resolve(fallbackCopyText(text));
+        }
+
+        function fallbackCopyText(text) {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                return ok;
+            } catch (e) {
+                return false;
+            }
+        }
+
         function copyFamilyCode() {
             const child = getActiveChild();
-            const code = child && child.familyCode ? child.familyCode : 'FAM-7942';
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(code).catch(() => {});
-                showQuickToast(`Copied invite code: ${code}`);
-            } else {
-                prompt('Copy family code:', code);
+            if (!child) {
+                showQuickToast('Create a child profile first');
+                return;
+            }
+            if (!canSyncChild(child) || cloudSyncStatus === 'expired') {
+                openAuthModalForSync();
+                return;
+            }
+            const code = child.familyCode || 'FAM-7942';
+            copyTextSafe(code).then(ok => {
+                if (ok) showQuickToast(`Copied invite code: ${code}`);
+                else prompt('Copy family code:', code);
+            });
+        }
+
+        async function joinFamilyByCode(rawCode, submitBtn = null, inputEl = null) {
+            const code = normalizeFamilyCode(rawCode);
+            if (!code) return false;
+
+            if (!isCloudSignedIn() || cloudSyncStatus === 'expired') {
+                openAuthModalForSync(code);
+                return false;
+            }
+
+            const origLabel = submitBtn ? submitBtn.innerText : '';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Connecting...'; }
+
+            try {
+                const res = await fetch('/api/family/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ code })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (res.ok && json.success && json.data) {
+                    cloudSyncStatus = 'synced';
+                    const existingIdx = children.findIndex(c => c.id === json.data.id);
+                    const normalized = ensureChildFields(json.data);
+                    normalized.localOnly = false;
+                    if (existingIdx >= 0) {
+                        children[existingIdx] = normalized;
+                        currentChildIdx = existingIdx;
+                    } else {
+                        children.push(normalized);
+                        currentChildIdx = children.length - 1;
+                    }
+                    saveLocalState();
+                    renderApp();
+                    if (inputEl) inputEl.value = '';
+                    showQuickToast(json.message || 'Connected to family profile');
+                    return true;
+                }
+                if (res.status === 401) {
+                    cloudSyncStatus = 'expired';
+                    renderFamilyTab(getActiveChild());
+                    updateAuthBadge();
+                    openAuthModalForSync(code);
+                    return false;
+                }
+                alert(json.message || `Family code "${code}" not found on server.`);
+                return false;
+            } catch (err) {
+                alert('Could not reach Chrono server — please check connection and try again.');
+                return false;
+            } finally {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = origLabel; }
             }
         }
 
         async function handleJoinFamily(e) {
             e.preventDefault();
             const input = document.getElementById('inputJoinFamilyCode');
-            const code = (input ? input.value : '').trim().toUpperCase();
-            if (!code) return;
+            const submitBtn = e.target ? e.target.querySelector('button[type="submit"]') : null;
+            await joinFamilyByCode(input ? input.value : '', submitBtn, input);
+        }
 
-            try {
-                if (isCloudSignedIn()) {
-                    const res = await fetch('/api/family/join', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                        body: JSON.stringify({ code })
-                    });
-                    const json = await res.json();
-                    if (res.ok && json.success && json.data) {
-                        const existingIdx = children.findIndex(c => c.id === json.data.id);
-                        const normalized = ensureChildFields(json.data);
-                        if (existingIdx >= 0) {
-                            children[existingIdx] = normalized;
-                            currentChildIdx = existingIdx;
-                        } else {
-                            children.push(normalized);
-                            currentChildIdx = children.length - 1;
-                        }
-                        saveLocalState();
-                        renderApp();
-                        input.value = '';
-                        showQuickToast(json.message || 'Connected to family profile');
-                        return;
-                    } else {
-                        alert(json.message || 'Family code not found');
-                        return;
-                    }
-                }
-            } catch (err) {}
-
-            showQuickToast(`Code ${code} requires sign-in for cloud sync`);
+        async function forceManualSync() {
+            if (!isCloudSignedIn() || cloudSyncStatus === 'expired') {
+                openAuthModalForSync();
+                return;
+            }
+            const ok = await syncWithBackend(true);
+            if (ok) showQuickToast('Family diary synced');
         }
 
         async function postEntryToServer(child, entry) {
@@ -1561,15 +1754,22 @@
             return false;
         }
 
-        async function syncWithBackend() {
-            if (!isCloudSignedIn() || inFlightEntrySyncCount > 0) return;
+        async function syncWithBackend(manual = false) {
+            if (!isCloudSignedIn() || inFlightEntrySyncCount > 0) return false;
             try {
                 const res = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
-                if (!res.ok) return;
+                if (res.status === 401) {
+                    cloudSyncStatus = 'expired';
+                    renderFamilyTab(getActiveChild());
+                    updateAuthBadge();
+                    return false;
+                }
+                if (!res.ok) return false;
                 const json = await res.json();
-                if (!json.success || !json.data || !Array.isArray(json.data.children)) return;
-                if (inFlightEntrySyncCount > 0) return;
+                if (!json.success || !json.data || !Array.isArray(json.data.children)) return false;
+                if (inFlightEntrySyncCount > 0) return false;
 
+                cloudSyncStatus = 'synced';
                 const localMap = {};
                 const localOnlyList = [];
                 children.forEach(lc => {
@@ -1604,11 +1804,20 @@
                     return ec;
                 });
 
-                children = [...merged, ...localOnlyList];
+                for (const lc of localOnlyList) {
+                    const uploaded = await uploadChildToCloud(lc);
+                    merged.push(uploaded ? lc : lc);
+                }
+
+                children = merged;
                 saveLocalState();
                 renderApp();
                 toRetry.forEach(({ child, entry }) => postEntryToServer(child, entry));
-            } catch (e) {}
+                return true;
+            } catch (e) {
+                if (manual) showQuickToast('Could not reach server');
+                return false;
+            }
         }
         setInterval(syncWithBackend, 12000);
         window.addEventListener('focus', syncWithBackend);
@@ -1674,6 +1883,10 @@
             if (tabId === 'chart') {
                 drawSmoothChart();
                 syncGrowthInputsFromChild();
+            }
+            if (tabId === 'family') {
+                renderFamilyTab(getActiveChild());
+                syncWithBackend();
             }
             if (tabId === 'settings') {
                 runDedicatedCalculation();
@@ -2178,6 +2391,7 @@
                         <p class="text-xs rev-muted">No child profile yet.</p>
                         <button type="button" onclick="openChildModal()" class="px-4 py-2 rounded-full text-xs font-bold rev-pill-primary">+ Add Child</button>
                     </div>`;
+                renderFamilyTab(null);
                 updateAuthBadge();
                 return;
             }
@@ -2311,52 +2525,8 @@
                 `).join('');
             }
 
-            // Family Tab: Code, Children List, Connected Caregivers, Reminders
-            document.getElementById('currentFamilyCodeDisplay').innerText = famCode;
-            const setChildList = document.getElementById('settingsChildrenList');
-            if (setChildList) {
-                setChildList.innerHTML = children.map((c, idx) => {
-                    const active = idx === currentChildIdx;
-                    return `
-                        <div onclick="selectChild(${idx})" class="rev-sub rounded-xl p-3 flex items-center justify-between cursor-pointer text-xs" style="${active ? 'border:1.5px solid var(--accent-blue);' : 'border:1px solid transparent;'}">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0" style="${active ? 'background:var(--accent-blue);color:#fff;' : 'background:var(--bg-card);'}">${escHtml(c.name.charAt(0).toUpperCase())}</span>
-                                <div class="min-w-0">
-                                    <div class="font-bold truncate">${escHtml(c.name)} · ${c.age} yr · ${formatWeight(c.weight)}</div>
-                                    <div class="rev-muted truncate">Code: ${escHtml(c.familyCode || famCode)}</div>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <span class="font-semibold" style="color:${active ? 'var(--accent-blue-text)' : 'var(--fg-muted)'};">${active ? 'Active' : 'Select'}</span>
-                                ${children.length > 1 ? `<button type="button" onclick="deleteChildProfile(${idx}, event)" class="px-2 py-1 rounded-lg rev-card text-xs" style="color:var(--accent-danger);">✕</button>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            const famList = document.getElementById('familyMembersList');
-            if (famList) {
-                const members = Array.isArray(child.familyMembers) && child.familyMembers.length
-                    ? child.familyMembers
-                    : [{ name: currentUser ? currentUser.name : 'Parent', role: 'Caregiver' }];
-                famList.innerHTML = members.map(m => {
-                    const mName = typeof m === 'string' ? m : (m.name || 'Caregiver');
-                    const mRole = typeof m === 'string' ? 'Parent' : (m.role || 'Parent');
-                    return `
-                        <div class="rev-sub rounded-xl px-3 py-2 flex items-center justify-between text-xs">
-                            <div class="flex items-center gap-2.5">
-                                <span class="w-7 h-7 rounded-full rev-card flex items-center justify-center font-bold">${escHtml(mName.charAt(0).toUpperCase())}</span>
-                                <div>
-                                    <div class="font-bold">${escHtml(mName)}</div>
-                                    <div class="rev-muted">${escHtml(mRole)}</div>
-                                </div>
-                            </div>
-                            <span class="font-semibold" style="color:var(--accent-teal);">Synced</span>
-                        </div>
-                    `;
-                }).join('');
-            }
+            // Family Tab: Code, Children List, Connected Caregivers, Sync Status, Reminders
+            renderFamilyTab(child);
 
             // Report Tab metrics
             document.getElementById('reportEpisodeBadge').innerText = child.episode || 'Observation';
@@ -2370,6 +2540,105 @@
             drawSmoothChart();
             syncGrowthInputsFromChild();
             updateAuthBadge();
+        }
+
+        function renderFamilyTab(child) {
+            const codeEl = document.getElementById('currentFamilyCodeDisplay');
+            const banner = document.getElementById('familySyncBanner');
+            const setChildList = document.getElementById('settingsChildrenList');
+            const famList = document.getElementById('familyMembersList');
+
+            const isCloud = isCloudSignedIn();
+            const isExpired = cloudSyncStatus === 'expired';
+            const childSynced = child && canSyncChild(child) && !isExpired;
+            const famCode = (child && child.familyCode) ? child.familyCode : 'FAM-7942';
+
+            if (codeEl) {
+                codeEl.innerText = !child ? 'No Child' : childSynced ? famCode : 'Sign In';
+            }
+
+            if (banner) {
+                if (!isCloud) {
+                    banner.innerHTML = `
+                        <div class="min-w-0">
+                            <div class="font-bold" style="color:var(--accent-warn);">Guest Mode (This Phone Only)</div>
+                            <div class="rev-muted leading-snug mt-0.5">Sign in or create a free account to get a live Family Code and connect Mom + Dad.</div>
+                        </div>
+                        <button type="button" onclick="openAuthModalForSync()" class="px-3 py-1.5 rounded-full font-bold rev-pill-primary shrink-0">Sign In</button>
+                    `;
+                } else if (isExpired) {
+                    banner.innerHTML = `
+                        <div class="min-w-0">
+                            <div class="font-bold" style="color:var(--accent-danger);">Session Expired / Server Restarted</div>
+                            <div class="rev-muted leading-snug mt-0.5">Sign in again to re-enable live Family Sync (your local diary stays safe).</div>
+                        </div>
+                        <button type="button" onclick="openAuthModalForSync()" class="px-3 py-1.5 rounded-full font-bold rev-pill-primary shrink-0">Reconnect</button>
+                    `;
+                } else {
+                    banner.innerHTML = `
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-2 h-2 rounded-full shrink-0" style="background:var(--accent-teal);"></span>
+                            <span class="font-semibold truncate" style="color:var(--accent-teal);">Live Cloud Sync Active</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${childSynced ? `<button type="button" onclick="copyFamilyCode()" class="px-2.5 py-1 rounded-full rev-card font-bold" style="color:var(--accent-blue-text);">Copy</button>` : ''}
+                            <button type="button" onclick="forceManualSync()" class="px-2.5 py-1 rounded-full rev-card font-bold">Sync Now</button>
+                        </div>
+                    `;
+                }
+            }
+
+            if (setChildList) {
+                if (!children.length) {
+                    setChildList.innerHTML = `<div class="text-xs rev-muted text-center py-2">No child profile yet. Tap + Add Child above or join via Family Code below.</div>`;
+                } else {
+                    setChildList.innerHTML = children.map((c, idx) => {
+                        const active = idx === currentChildIdx;
+                        const cSynced = canSyncChild(c) && !isExpired;
+                        return `
+                            <div onclick="selectChild(${idx})" class="rev-sub rounded-xl p-3 flex items-center justify-between cursor-pointer text-xs" style="${active ? 'border:1.5px solid var(--accent-blue);' : 'border:1px solid transparent;'}">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0" style="${active ? 'background:var(--accent-blue);color:#fff;' : 'background:var(--bg-card);'}">${escHtml(c.name.charAt(0).toUpperCase())}</span>
+                                    <div class="min-w-0">
+                                        <div class="font-bold truncate">${escHtml(c.name)} · ${c.age} yr · ${formatWeight(c.weight)}</div>
+                                        <div class="rev-muted truncate">${cSynced ? `Code: ${escHtml(c.familyCode || famCode)}` : 'Local only (sign in to sync)'}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span class="font-semibold" style="color:${active ? 'var(--accent-blue-text)' : 'var(--fg-muted)'};">${active ? 'Active' : 'Select'}</span>
+                                    ${children.length > 1 ? `<button type="button" onclick="deleteChildProfile(${idx}, event)" class="px-2 py-1 rounded-lg rev-card text-xs" style="color:var(--accent-danger);">✕</button>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            if (famList) {
+                if (!child) {
+                    famList.innerHTML = `<div class="text-xs rev-muted text-center py-1">Create or join a child profile to see connected parents.</div>`;
+                } else {
+                    const members = Array.isArray(child.familyMembers) && child.familyMembers.length
+                        ? child.familyMembers
+                        : [{ name: currentUser ? currentUser.name : 'Parent', role: 'Caregiver' }];
+                    famList.innerHTML = members.map(m => {
+                        const mName = typeof m === 'string' ? m : (m.name || 'Caregiver');
+                        const mRole = typeof m === 'string' ? 'Parent' : (m.role || 'Parent');
+                        return `
+                            <div class="rev-sub rounded-xl px-3 py-2 flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-full rev-card flex items-center justify-center font-bold">${escHtml(mName.charAt(0).toUpperCase())}</span>
+                                    <div>
+                                        <div class="font-bold">${escHtml(mName)}</div>
+                                        <div class="rev-muted">${escHtml(mRole)}</div>
+                                    </div>
+                                </div>
+                                <span class="font-semibold" style="color:${childSynced ? 'var(--accent-teal)' : 'var(--fg-muted)'};">${childSynced ? 'Synced' : 'Local'}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
         }
 
         function selectChild(idx) {
@@ -2938,13 +3207,13 @@
         }
 
         function openAuthModal() {
-            if (currentUser) {
+            if (currentUser && isCloudSignedIn() && cloudSyncStatus !== 'expired') {
                 if (confirm(`Signed in as ${currentUser.name} (@${currentUser.username}). Sign out?`)) {
                     handleLogout();
                 }
                 return;
             }
-            document.getElementById('onboardingAuthScreen').classList.remove('hidden');
+            openAuthModalForSync();
         }
 
         function handleLogout() {
@@ -2968,9 +3237,15 @@
         function updateAuthBadge() {
             const summary = document.getElementById('authAccountSummary');
             const btn = document.getElementById('settingsAuthActionBtn');
-            if (currentUser) {
+            if (currentUser && isCloudSignedIn() && cloudSyncStatus !== 'expired') {
                 if (summary) summary.innerText = `${currentUser.name} (@${currentUser.username})`;
                 if (btn) btn.innerText = 'Sign Out';
+            } else if (cloudSyncStatus === 'expired' && currentUser) {
+                if (summary) summary.innerText = `${currentUser.name} (Session expired)`;
+                if (btn) btn.innerText = 'Reconnect';
+            } else if (currentUser) {
+                if (summary) summary.innerText = 'Guest mode (this device only)';
+                if (btn) btn.innerText = 'Sign In';
             } else {
                 if (summary) summary.innerText = 'Not signed in';
                 if (btn) btn.innerText = 'Sign In';

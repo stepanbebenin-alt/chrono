@@ -271,8 +271,10 @@ const server = http.createServer(async (req, res) => {
                 const name = (body.name || '').trim();
                 if (!name) return sendJson(res, 400, { success: false, message: 'Name is required' });
 
-                const childId = 'c_' + Date.now();
-                const familyCode = generateFamilyCode();
+                const childId = 'c_' + Date.now() + '_' + crypto.randomBytes(2).toString('hex');
+                const requestedCode = String(body.familyCode || '').trim().toUpperCase();
+                const codeInUse = requestedCode && Object.values(db.children).some(c => (c.familyCode || '').toUpperCase() === requestedCode);
+                const familyCode = (/^FAM-[A-Z0-9]{4,8}$/.test(requestedCode) && !codeInUse) ? requestedCode : generateFamilyCode();
 
                 const newChild = {
                     id: childId,
@@ -282,15 +284,17 @@ const server = http.createServer(async (req, res) => {
                         { userId: authUserId, name: activeUser.name, role: 'Profile creator' }
                     ],
                     name,
-                    age: parseInt(body.age, 10) || 5,
+                    age: parseFloat(body.age) || 5,
                     weight: parseFloat(body.weight) || 18,
                     height: parseFloat(body.height) || 110,
                     allergies: (body.allergies || 'None').trim(),
                     doctorPhone: (body.doctorPhone || '').trim(),
                     episode: (body.episode || 'Observation started').trim(),
-                    points48h: [], // Clean measurement history
-                    reminders: [], // Reminders
-                    savedMeds: [],
+                    points48h: Array.isArray(body.points48h) ? body.points48h.slice(-200) : [],
+                    reminders: Array.isArray(body.reminders) ? body.reminders.slice(0, 50) : [],
+                    savedMeds: Array.isArray(body.savedMeds) ? body.savedMeds.slice(0, 10) : [],
+                    urineLogs: Array.isArray(body.urineLogs) ? body.urineLogs.slice(-100) : [],
+                    archivedEpisodes: Array.isArray(body.archivedEpisodes) ? body.archivedEpisodes.slice(-30) : [],
                     createdAt: new Date().toISOString()
                 };
 
@@ -305,7 +309,10 @@ const server = http.createServer(async (req, res) => {
             // POST /api/family/join (Family Multi-Access: Mom + Dad)
             if (pathname === '/api/family/join' && method === 'POST') {
                 const body = await parseJsonBody(req);
-                const inputCode = (body.code || '').trim().toUpperCase();
+                let inputCode = (body.code || '').trim().toUpperCase().replace(/\s+/g, '');
+                if (/^[A-Z0-9]{4}$/.test(inputCode)) {
+                    inputCode = 'FAM-' + inputCode;
+                }
 
                 if (!inputCode) {
                     return sendJson(res, 400, { success: false, message: 'Please enter a family invite code' });
