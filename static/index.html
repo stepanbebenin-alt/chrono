@@ -37,12 +37,25 @@
         /* COLOR THEMES: CLEAR NAMES AND HIGH CONTRAST */
         /* ========================================================= */
 
+        /* BASE FALLBACK DEFAULTS (covers screens outside #appShell too) */
+        .ps-card { background-color: #131d2b; border: 1px solid #233247; color: #f1f5f9; }
+        .ps-subcard { background-color: #0e1622; border: 1px solid #233247; color: #e2e8f0; }
+        .ps-input { background-color: #0d141f; border: 1px solid #334155; color: #f8fafc; color-scheme: dark; }
+        .ps-input::placeholder { color: #94a3b8; opacity: 1; }
+        .ps-input:focus { outline: none; border-color: #2dd4bf; box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25); }
+        .ps-input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #0d141f inset !important; -webkit-text-fill-color: #f8fafc !important; caret-color: #f8fafc; }
+        .ps-muted { color: #94a3b8; }
+        .ps-nav { background-color: rgba(11, 17, 26, 0.96); border-color: #1e2c3f; color: #f1f5f9; }
+        .ps-accent { color: #34d399; }
+        .ps-btn-accent { background-color: #0d9488; color: #ffffff; }
+        .ps-btn-accent:hover { background-color: #0f766e; }
+
         /* 1. DARK THEME */
-        .theme-dark { background-color: #0b111a; color: #f1f5f9; }
+        .theme-dark { background-color: #0b111a; color: #f1f5f9; color-scheme: dark; }
         .theme-dark .ps-card { background-color: #131d2b; border: 1px solid #233247; color: #f1f5f9; }
         .theme-dark .ps-subcard { background-color: #0e1622; border: 1px solid #233247; color: #e2e8f0; }
-        .theme-dark .ps-input { background-color: #0d141f; border: 1px solid #28374d; color: #f8fafc; }
-        .theme-dark .ps-input::placeholder { color: #64748b; }
+        .theme-dark .ps-input { background-color: #0d141f; border: 1px solid #334155; color: #f8fafc; color-scheme: dark; }
+        .theme-dark .ps-input::placeholder { color: #94a3b8; opacity: 1; }
         .theme-dark .ps-muted { color: #94a3b8; }
         .theme-dark .ps-nav { background-color: rgba(11, 17, 26, 0.96); border-color: #1e2c3f; color: #f1f5f9; }
         .theme-dark .ps-accent { color: #34d399; }
@@ -50,11 +63,13 @@
         .theme-dark .ps-btn-accent:hover { background-color: #0f766e; }
 
         /* 2. LIGHT THEME (WCAG AAA HIGH CONTRAST) */
-        .theme-light { background-color: #f1f5f9; color: #0f172a; }
+        .theme-light { background-color: #f1f5f9; color: #0f172a; color-scheme: light; }
         .theme-light .ps-card { background-color: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
         .theme-light .ps-subcard { background-color: #f8fafc; border: 1px solid #cbd5e1; color: #0f172a; }
-        .theme-light .ps-input { background-color: #ffffff; border: 1px solid #94a3b8; color: #0f172a; }
-        .theme-light .ps-input::placeholder { color: #64748b; }
+        .theme-light .ps-input { background-color: #ffffff; border: 1px solid #94a3b8; color: #0f172a; color-scheme: light; }
+        .theme-light .ps-input::placeholder { color: #64748b; opacity: 1; }
+        .theme-light .ps-input:focus { border-color: #0f766e; box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2); }
+        .theme-light .ps-input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important; -webkit-text-fill-color: #0f172a !important; caret-color: #0f172a; }
         .theme-light .ps-muted { color: #475569; }
         .theme-light .ps-nav { background-color: rgba(255, 255, 255, 0.98); border-color: #cbd5e1; color: #0f172a; box-shadow: 0 -1px 4px rgba(0,0,0,0.03); }
         .theme-light .ps-accent { color: #0f766e; }
@@ -78,11 +93,12 @@
         .theme-light .bg-black\/60 { background-color: #f8fafc !important; color: #0f172a !important; }
 
         /* 3. MINT THEME */
-        .theme-mint { background-color: #06241f; color: #f0fdf4; }
+        .theme-mint { background-color: #06241f; color: #f0fdf4; color-scheme: dark; }
         .theme-mint .ps-card { background-color: #0d3830; border: 1px solid #1a574a; color: #f0fdf4; }
         .theme-mint .ps-subcard { background-color: #082822; border: 1px solid #1a574a; color: #dcfce7; }
-        .theme-mint .ps-input { background-color: #051d18; border: 1px solid #1d6b5e; color: #ffffff; }
-        .theme-mint .ps-input::placeholder { color: #86efac; }
+        .theme-mint .ps-input { background-color: #051d18; border: 1px solid #24786a; color: #ffffff; color-scheme: dark; }
+        .theme-mint .ps-input::placeholder { color: #86efac; opacity: 0.9; }
+        .theme-mint .ps-input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #051d18 inset !important; -webkit-text-fill-color: #ffffff !important; caret-color: #ffffff; }
         .theme-mint .ps-muted { color: #bbf7d0; }
         .theme-mint .ps-nav { background-color: rgba(6, 36, 31, 0.96); border-color: #1a574a; color: #f0fdf4; }
         .theme-mint .ps-accent { color: #4ade80; }
@@ -90,16 +106,28 @@
         .theme-mint .ps-btn-accent:hover { background-color: #059669; }
 
         /* 4. WARM THEME */
-        .theme-warm { background-color: #1c1917; color: #fafaf9; }
+        .theme-warm { background-color: #1c1917; color: #fafaf9; color-scheme: dark; }
         .theme-warm .ps-card { background-color: #292524; border: 1px solid #44403c; color: #fafaf9; }
         .theme-warm .ps-subcard { background-color: #1f1c1a; border: 1px solid #44403c; color: #f5f5f4; }
-        .theme-warm .ps-input { background-color: #181514; border: 1px solid #57534e; color: #ffffff; }
-        .theme-warm .ps-input::placeholder { color: #a8a29e; }
+        .theme-warm .ps-input { background-color: #181514; border: 1px solid #6b6560; color: #ffffff; color-scheme: dark; }
+        .theme-warm .ps-input::placeholder { color: #d6d3d1; opacity: 0.85; }
+        .theme-warm .ps-input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #181514 inset !important; -webkit-text-fill-color: #ffffff !important; caret-color: #ffffff; }
         .theme-warm .ps-muted { color: #d6d3d1; }
         .theme-warm .ps-nav { background-color: rgba(28, 25, 23, 0.96); border-color: #44403c; color: #fafaf9; }
         .theme-warm .ps-accent { color: #fb923c; }
         .theme-warm .ps-btn-accent { background-color: #f97316; color: #1c1917; }
         .theme-warm .ps-btn-accent:hover { background-color: #ea580c; }
+
+        /* HIGH-CONTRAST MEDICINE PILL STATES (ALL THEMES) */
+        .ps-med-pill { border: 1px solid rgba(148, 163, 184, 0.35); opacity: 0.78; cursor: pointer; }
+        .ps-med-pill:hover { opacity: 1; border-color: rgba(45, 212, 191, 0.6); }
+        .ps-med-pill.med-active-none { opacity: 1; background-color: rgba(148, 163, 184, 0.22) !important; border: 2px solid #94a3b8 !important; color: #ffffff !important; box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3); }
+        .ps-med-pill.med-active-ibu { opacity: 1; background-color: rgba(20, 184, 166, 0.28) !important; border: 2px solid #2dd4bf !important; color: #ffffff !important; box-shadow: 0 0 12px rgba(45, 212, 191, 0.22); }
+        .ps-med-pill.med-active-para { opacity: 1; background-color: rgba(56, 189, 248, 0.28) !important; border: 2px solid #38bdf8 !important; color: #ffffff !important; box-shadow: 0 0 12px rgba(56, 189, 248, 0.22); }
+        .theme-light .ps-med-pill { border: 1px solid #cbd5e1; opacity: 0.85; }
+        .theme-light .ps-med-pill.med-active-none { background-color: #e2e8f0 !important; border: 2px solid #334155 !important; color: #0f172a !important; }
+        .theme-light .ps-med-pill.med-active-ibu { background-color: #ccfbf1 !important; border: 2px solid #0f766e !important; color: #0f172a !important; }
+        .theme-light .ps-med-pill.med-active-para { background-color: #e0f2fe !important; border: 2px solid #0369a1 !important; color: #0f172a !important; }
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -173,7 +201,7 @@
     <!-- ========================================================= -->
     <!-- 2. MINIMALIST REGISTRATION & SIGN IN SCREEN               -->
     <!-- ========================================================= -->
-    <div id="onboardingAuthScreen" class="fixed inset-0 z-[90] flex items-center justify-center p-5 bg-[#0b111a] text-[#f1f5f9] hidden">
+    <div id="onboardingAuthScreen" class="theme-dark fixed inset-0 z-[90] flex items-center justify-center p-5 hidden">
         <div class="ps-card rounded-3xl max-w-xs w-full p-6 space-y-5 shadow-2xl border border-white/10">
             <div class="text-center space-y-1.5">
                 <div class="w-11 h-11 rounded-2xl bg-teal-400 text-[#0b111a] font-serif-ed font-bold text-2xl flex items-center justify-center mx-auto">
@@ -195,8 +223,8 @@
 
             <!-- Login Form -->
             <form id="obLoginForm" onsubmit="handleObAuthSubmit(event, 'login')" class="space-y-2.5 text-xs">
-                <input type="text" id="obLoginUsername" placeholder="Username" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm">
-                <input type="password" id="obLoginPassword" placeholder="Password" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm">
+                <input type="text" id="obLoginUsername" placeholder="Username" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm font-medium">
+                <input type="password" id="obLoginPassword" placeholder="Password" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm font-medium">
                 <button type="submit" class="w-full ps-btn-accent font-bold py-3 rounded-xl text-sm transition">
                     Sign In
                 </button>
@@ -204,9 +232,9 @@
 
             <!-- Registration Form -->
             <form id="obRegisterForm" onsubmit="handleObAuthSubmit(event, 'register')" class="space-y-2.5 text-xs hidden">
-                <input type="text" id="obRegName" placeholder="Your name (e.g. Anna)" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm">
-                <input type="text" id="obRegUsername" placeholder="Username" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm">
-                <input type="password" id="obRegPassword" placeholder="Password" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm">
+                <input type="text" id="obRegName" placeholder="Your name (e.g. Anna)" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm font-medium">
+                <input type="text" id="obRegUsername" placeholder="Username" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm font-medium">
+                <input type="password" id="obRegPassword" placeholder="Password" required class="ps-input w-full rounded-xl px-3.5 py-3 text-sm font-medium">
                 <button type="submit" class="w-full ps-btn-accent font-bold py-3 rounded-xl text-sm transition">
                     Create Account
                 </button>
@@ -223,23 +251,41 @@
     <!-- ========================================================= -->
     <!-- 3. MINIMALIST CHILD SETUP (ESSENTIAL CLINICAL FIELDS)     -->
     <!-- ========================================================= -->
-    <div id="onboardingChildScreen" class="fixed inset-0 z-[85] flex items-center justify-center p-5 bg-[#0b111a] text-[#f1f5f9] hidden">
+    <div id="onboardingChildScreen" class="theme-dark fixed inset-0 z-[85] flex items-center justify-center p-5 hidden">
         <div class="ps-card rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-white/10">
             <div class="text-center space-y-1">
                 <h2 class="font-serif-ed font-bold text-2xl">Child Profile</h2>
                 <p class="text-xs ps-muted">Enter weight &amp; clinical details for safe dosing</p>
             </div>
 
-            <form onsubmit="handleInitialChildSubmit(event)" class="space-y-2.5 text-xs">
-                <input type="text" id="initChildName" placeholder="Child's name *" required class="ps-input w-full rounded-xl px-3.5 py-2.5 text-sm">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="number" step="0.5" id="initChildWeight" placeholder="Exact weight (kg) *" required class="ps-input w-full rounded-xl px-3.5 py-2.5 text-sm font-bold text-teal-400">
-                    <input type="number" id="initChildAge" placeholder="Age (yr) *" value="4" required class="ps-input w-full rounded-xl px-3.5 py-2.5 text-sm">
+            <form onsubmit="handleInitialChildSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label for="initChildName" class="block text-[11px] font-semibold ps-muted mb-1">Child's name *</label>
+                    <input type="text" id="initChildName" placeholder="e.g. Leo or Mia" required class="ps-input w-full rounded-xl px-3.5 py-2.5 text-sm font-medium">
                 </div>
-                <input type="text" id="initChildEpisode" placeholder="Current symptoms / episode (e.g. Fever day 1)" class="ps-input w-full rounded-xl px-3.5 py-2.5 text-xs">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="initChildAllergies" placeholder="Allergies (optional)" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
-                    <input type="text" id="initChildDoctor" placeholder="Pediatrician phone" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label for="initChildWeight" class="block text-[11px] font-semibold ps-muted mb-1">Weight (kg) *</label>
+                        <input type="number" step="0.5" id="initChildWeight" placeholder="e.g. 16" required class="ps-input w-full rounded-xl px-3.5 py-2.5 text-sm font-bold">
+                    </div>
+                    <div>
+                        <label for="initChildAge" class="block text-[11px] font-semibold ps-muted mb-1">Age (years) *</label>
+                        <input type="number" id="initChildAge" placeholder="4" value="4" required class="ps-input w-full rounded-xl px-3.5 py-2.5 text-sm font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label for="initChildEpisode" class="block text-[11px] font-semibold ps-muted mb-1">Current symptoms / episode</label>
+                    <input type="text" id="initChildEpisode" placeholder="e.g. Fever day 1 (optional)" class="ps-input w-full rounded-xl px-3.5 py-2.5 text-xs font-medium">
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label for="initChildAllergies" class="block text-[11px] font-semibold ps-muted mb-1">Allergies (optional)</label>
+                        <input type="text" id="initChildAllergies" placeholder="None" class="ps-input w-full rounded-xl px-3 py-2 text-xs font-medium">
+                    </div>
+                    <div>
+                        <label for="initChildDoctor" class="block text-[11px] font-semibold ps-muted mb-1">Pediatrician phone</label>
+                        <input type="text" id="initChildDoctor" placeholder="+1..." class="ps-input w-full rounded-xl px-3 py-2 text-xs font-medium">
+                    </div>
                 </div>
 
                 <button type="submit" class="w-full ps-btn-accent font-bold py-3 rounded-xl text-sm transition mt-1">
@@ -411,23 +457,30 @@
                             </div>
                         </div>
 
-                        <!-- Clean 3-Way Medicine Selector + Calculator Link -->
-                        <div class="space-y-1.5">
+                        <!-- Clear Medicine Selector + Custom Med Input -->
+                        <div class="space-y-2">
                             <div class="flex items-center justify-between text-[11px]">
-                                <span class="ps-muted font-medium">Fever medicine (auto-dose):</span>
-                                <button type="button" onclick="switchTab('calculator')" class="ps-accent font-semibold hover:underline">All syrups →</button>
+                                <span class="font-semibold">Did you give fever medicine?</span>
+                                <button type="button" onclick="switchTab('calculator')" class="ps-accent font-semibold hover:underline">Dose calculator →</button>
                             </div>
-                            <div class="grid grid-cols-3 gap-1.5 text-xs">
-                                <button type="button" id="quickMedNone" onclick="selectQuickMedPill('none')" class="ps-subcard border-2 border-teal-400 py-2 px-2 rounded-xl font-semibold text-xs text-center transition">
-                                    No Med
+                            <div class="grid grid-cols-3 gap-2 text-xs">
+                                <button type="button" id="quickMedNone" onclick="selectQuickMedPill('none')" class="ps-subcard ps-med-pill med-active-none py-2.5 px-2 rounded-xl text-center transition">
+                                    <span id="quickNoneBadge" class="block text-[11px] font-bold">✓ No Med</span>
+                                    <span class="block text-[10px] ps-muted mt-0.5">Temp only</span>
                                 </button>
-                                <button type="button" id="quickMedIbu" onclick="selectQuickMedPill('ibu')" class="ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-semibold text-xs text-center transition">
-                                    Ibuprofen<br><span id="quickIbuDoseSpan" class="text-[10px] text-teal-400 font-mono">8.0 ml</span>
+                                <button type="button" id="quickMedIbu" onclick="selectQuickMedPill('ibu')" class="ps-subcard ps-med-pill py-2.5 px-1.5 rounded-xl text-center transition">
+                                    <span id="quickIbuBadge" class="block text-[11px] font-bold">Ibuprofen</span>
+                                    <span id="quickIbuDoseSpan" class="block text-[11px] text-teal-400 font-mono font-bold mt-0.5">8.0 ml</span>
                                 </button>
-                                <button type="button" id="quickMedPara" onclick="selectQuickMedPill('para')" class="ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-semibold text-xs text-center transition">
-                                    Paracetamol<br><span id="quickParaDoseSpan" class="text-[10px] text-sky-400 font-mono">10.0 ml</span>
+                                <button type="button" id="quickMedPara" onclick="selectQuickMedPill('para')" class="ps-subcard ps-med-pill py-2.5 px-1.5 rounded-xl text-center transition">
+                                    <span id="quickParaBadge" class="block text-[11px] font-bold">Paracetamol</span>
+                                    <span id="quickParaDoseSpan" class="block text-[11px] text-sky-400 font-mono font-bold mt-0.5">10.0 ml</span>
                                 </button>
                             </div>
+                            <div id="quickMedStatusHint" class="text-[11px] ps-subcard rounded-xl px-3 py-2 ps-muted">
+                                ✓ <strong class="font-semibold">No medicine selected</strong> — temperature check only.
+                            </div>
+                            <input type="text" id="inputMed" oninput="handleCustomMedInput(this.value)" placeholder="Or type another medicine / custom dose (optional)..." class="ps-input w-full rounded-xl px-3.5 py-2 text-xs">
                         </div>
 
                         <!-- 1-Tap Symptom & Drink Chips -->
@@ -440,13 +493,10 @@
                             <button type="button" onclick="toggleSymptomChip(this, 'Sore throat')" class="symptom-chip ps-subcard px-2.5 py-1 rounded-xl text-[11px] font-medium">🔴 Sore throat</button>
                         </div>
 
-                        <!-- Clean Note + Optional Custom Med & Exact Fluids -->
-                        <div class="space-y-2">
-                            <input type="text" id="inputNote" placeholder="Symptoms or note (optional)..." class="ps-input w-full rounded-xl px-3.5 py-2 text-xs">
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="inputMed" placeholder="Custom med & dose" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
-                                <input type="text" id="inputDrink" placeholder="Exact fluids (ml)" class="ps-input w-full rounded-xl px-3 py-2 text-xs">
-                            </div>
+                        <!-- Clean Note & Exact Fluids -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="inputNote" placeholder="Symptoms or note..." class="ps-input w-full rounded-xl px-3.5 py-2 text-xs">
+                            <input type="text" id="inputDrink" placeholder="Exact fluids (ml)" class="ps-input w-full rounded-xl px-3.5 py-2 text-xs">
                         </div>
 
                         <!-- Primary Save Button -->
@@ -1127,7 +1177,7 @@
                         </div>
                         <div>
                             <label class="block ps-muted mb-1 font-medium">Exact weight (kg)*</label>
-                            <input type="number" step="0.5" id="newChildWeight" placeholder="19" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm font-bold text-teal-400">
+                            <input type="number" step="0.5" id="newChildWeight" placeholder="19" required class="ps-input w-full rounded-xl px-3 py-2.5 text-sm font-bold">
                         </div>
                     </div>
                     <div>
@@ -1820,8 +1870,12 @@
             if (qPara) qPara.innerText = `${paraMl} ml`;
             if (selectedQuickMedType === 'ibu') {
                 document.getElementById('inputMed').value = `Ibuprofen ${ibuMl} ml`;
+                updateQuickMedStatusHint('ibu', '', ibuMl, paraMl);
             } else if (selectedQuickMedType === 'para') {
                 document.getElementById('inputMed').value = `Paracetamol ${paraMl} ml`;
+                updateQuickMedStatusHint('para', '', ibuMl, paraMl);
+            } else if (selectedQuickMedType === 'none') {
+                updateQuickMedStatusHint('none', '', ibuMl, paraMl);
             }
 
             // 48-hour summary
@@ -2312,33 +2366,99 @@
             updateTempSeverityHint(valC);
         }
 
+        function updateQuickMedStatusHint(type, customText = '', ibuMl = 8, paraMl = 10) {
+            const hint = document.getElementById('quickMedStatusHint');
+            if (!hint) return;
+            hint.textContent = '';
+            const strong = document.createElement('strong');
+            strong.className = 'font-semibold';
+
+            if (type === 'ibu') {
+                hint.className = 'text-[11px] ps-subcard rounded-xl px-3 py-2 text-teal-400 border border-teal-500/40';
+                strong.textContent = `✓ Ibuprofen ${ibuMl} ml selected`;
+                hint.appendChild(strong);
+                hint.appendChild(document.createTextNode(' — will save dose & start 6–8h safety timer.'));
+            } else if (type === 'para') {
+                hint.className = 'text-[11px] ps-subcard rounded-xl px-3 py-2 text-sky-400 border border-sky-500/40';
+                strong.textContent = `✓ Paracetamol ${paraMl} ml selected`;
+                hint.appendChild(strong);
+                hint.appendChild(document.createTextNode(' — will save dose & start 4–6h safety timer.'));
+            } else if (type === 'custom' && customText) {
+                hint.className = 'text-[11px] ps-subcard rounded-xl px-3 py-2 ps-accent border border-teal-500/40';
+                strong.textContent = `✓ Custom medicine: ${customText}`;
+                hint.appendChild(strong);
+                hint.appendChild(document.createTextNode(' — will be saved with this entry.'));
+            } else {
+                hint.className = 'text-[11px] ps-subcard rounded-xl px-3 py-2 ps-muted';
+                strong.textContent = '✓ No medicine selected';
+                hint.appendChild(strong);
+                hint.appendChild(document.createTextNode(' — temperature check only.'));
+            }
+        }
+
+        function setQuickMedPillVisuals(activeType) {
+            const bNone = document.getElementById('quickMedNone');
+            const bIbu = document.getElementById('quickMedIbu');
+            const bPara = document.getElementById('quickMedPara');
+            const noneBadge = document.getElementById('quickNoneBadge');
+            const ibuBadge = document.getElementById('quickIbuBadge');
+            const paraBadge = document.getElementById('quickParaBadge');
+
+            if (bNone) bNone.className = `ps-subcard ps-med-pill ${activeType === 'none' ? 'med-active-none' : ''} py-2.5 px-2 rounded-xl text-center transition`;
+            if (bIbu) bIbu.className = `ps-subcard ps-med-pill ${activeType === 'ibu' ? 'med-active-ibu' : ''} py-2.5 px-1.5 rounded-xl text-center transition`;
+            if (bPara) bPara.className = `ps-subcard ps-med-pill ${activeType === 'para' ? 'med-active-para' : ''} py-2.5 px-1.5 rounded-xl text-center transition`;
+
+            if (noneBadge) noneBadge.innerText = activeType === 'none' ? '✓ No Med' : 'No Med';
+            if (ibuBadge) ibuBadge.innerText = activeType === 'ibu' ? '✓ Ibuprofen' : 'Ibuprofen';
+            if (paraBadge) paraBadge.innerText = activeType === 'para' ? '✓ Paracetamol' : 'Paracetamol';
+        }
+
+        function handleCustomMedInput(val) {
+            const trimmed = (val || '').trim();
+            const child = getActiveChild();
+            const weight = child ? child.weight : 16;
+            const ibuMl = +(weight * 0.5).toFixed(1);
+            const paraMl = +(weight * 0.625).toFixed(1);
+
+            if (!trimmed) {
+                selectedQuickMedType = 'none';
+                setQuickMedPillVisuals('none');
+                updateQuickMedStatusHint('none', '', ibuMl, paraMl);
+                return;
+            }
+            if (trimmed === `Ibuprofen ${ibuMl} ml`) {
+                selectedQuickMedType = 'ibu';
+                setQuickMedPillVisuals('ibu');
+                updateQuickMedStatusHint('ibu', '', ibuMl, paraMl);
+                return;
+            }
+            if (trimmed === `Paracetamol ${paraMl} ml`) {
+                selectedQuickMedType = 'para';
+                setQuickMedPillVisuals('para');
+                updateQuickMedStatusHint('para', '', ibuMl, paraMl);
+                return;
+            }
+            selectedQuickMedType = 'custom';
+            setQuickMedPillVisuals('custom');
+            updateQuickMedStatusHint('custom', trimmed, ibuMl, paraMl);
+        }
+
         function selectQuickMedPill(type) {
             selectedQuickMedType = type;
             const child = getActiveChild();
             const weight = child ? child.weight : 16;
             const ibuMl = +(weight * 0.5).toFixed(1);
             const paraMl = +(weight * 0.625).toFixed(1);
-
-            const bNone = document.getElementById('quickMedNone');
-            const bIbu = document.getElementById('quickMedIbu');
-            const bPara = document.getElementById('quickMedPara');
             const medInput = document.getElementById('inputMed');
 
-            if (bNone) bNone.className = type === 'none'
-                ? 'ps-subcard border-2 border-teal-400 py-2 px-2 rounded-xl font-bold text-[11px] text-center transition'
-                : 'ps-subcard border border-transparent py-2 px-2 rounded-xl font-bold text-[11px] text-center transition opacity-75';
-            if (bIbu) bIbu.className = type === 'ibu'
-                ? 'ps-subcard border-2 border-teal-400 bg-teal-500/15 py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition'
-                : 'ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition';
-            if (bPara) bPara.className = type === 'para'
-                ? 'ps-subcard border-2 border-sky-400 bg-sky-500/15 py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition'
-                : 'ps-subcard border border-transparent py-2 px-1.5 rounded-xl font-bold text-[11px] text-center transition';
+            setQuickMedPillVisuals(type);
 
             if (medInput) {
                 if (type === 'ibu') medInput.value = `Ibuprofen ${ibuMl} ml`;
                 else if (type === 'para') medInput.value = `Paracetamol ${paraMl} ml`;
                 else medInput.value = '';
             }
+            updateQuickMedStatusHint(type, medInput ? medInput.value.trim() : '', ibuMl, paraMl);
         }
 
         function toggleQuickDrinkChip(btn, text) {
@@ -2887,10 +3007,15 @@
             const medSelect = document.getElementById('feverMedSelect');
             const medName = medSelect.options[medSelect.selectedIndex].text.split('(')[0].trim();
             const doseText = document.getElementById('feverResultDose').innerText;
+            const fullDose = `${medName} ${doseText}`.trim();
 
             switchTab('diary');
-            document.getElementById('inputMed').value = `${medName} ${doseText}`;
-            document.getElementById('inputMed').focus();
+            const medInput = document.getElementById('inputMed');
+            if (medInput) {
+                medInput.value = fullDose;
+                handleCustomMedInput(fullDose);
+                medInput.focus();
+            }
         }
 
         // ==========================================
@@ -3186,9 +3311,12 @@
         function toggleThemeMenu() { document.getElementById('themeMenu').classList.toggle('hidden'); }
         function setTheme(themeName, persist = true) {
             currentTheme = themeName;
-            const shell = document.getElementById('appShell');
-            shell.classList.remove('theme-dark', 'theme-light', 'theme-mint', 'theme-warm');
-            shell.classList.add(`theme-${themeName}`);
+            ['appShell', 'onboardingAuthScreen', 'onboardingChildScreen'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove('theme-dark', 'theme-light', 'theme-mint', 'theme-warm');
+                el.classList.add(`theme-${themeName}`);
+            });
 
             if (persist) {
                 localStorage.setItem('ps_theme', themeName);
