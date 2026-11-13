@@ -290,6 +290,7 @@ const server = http.createServer(async (req, res) => {
                     episode: (body.episode || 'Observation started').trim(),
                     points48h: [], // Clean measurement history
                     reminders: [], // Reminders
+                    savedMeds: [],
                     createdAt: new Date().toISOString()
                 };
 
@@ -414,6 +415,7 @@ const server = http.createServer(async (req, res) => {
                 if (Array.isArray(body.urineLogs)) child.urineLogs = body.urineLogs;
                 if (Array.isArray(body.vaccines)) child.vaccines = body.vaccines;
                 if (Array.isArray(body.archivedEpisodes)) child.archivedEpisodes = body.archivedEpisodes;
+                if (Array.isArray(body.savedMeds)) child.savedMeds = body.savedMeds;
 
                 saveDatabase();
                 return sendJson(res, 200, { success: true, data: child });
