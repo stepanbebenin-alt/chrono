@@ -250,6 +250,13 @@
     </style>
 </head>
 <body class="theme-dark antialiased h-full m-0 p-0">
+    <script>
+        (function () {
+            var t = localStorage.getItem('ps_theme') || 'dark';
+            if (['dark', 'light', 'mint', 'warm'].indexOf(t) === -1) t = 'dark';
+            document.body.className = 'theme-' + t + ' antialiased h-full m-0 p-0';
+        })();
+    </script>
 
     <!-- Toast Notification -->
     <div id="quickToast" class="fixed top-14 left-1/2 -translate-x-1/2 z-[120] font-bold text-xs px-4 py-2.5 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none" style="background:var(--accent-blue);color:#ffffff;">
@@ -257,9 +264,9 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- 1. SPLASH SCREEN (ON DEMAND OR OPTIONAL)                  -->
+    <!-- 1. LOADING / SPLASH SCREEN                                -->
     <!-- ========================================================= -->
-    <div id="splashScreen" class="fixed inset-0 z-[100] flex flex-col items-center justify-between p-6 transition-opacity duration-500 hidden" style="background:var(--bg-screen);color:var(--fg-primary);">
+    <div id="splashScreen" class="fixed inset-0 z-[100] flex flex-col items-center justify-between p-6 transition-opacity duration-500" style="background:var(--bg-screen);color:var(--fg-primary);">
         <div class="w-full max-w-[420px] flex justify-between items-center text-xs rev-muted pt-2">
             <span class="flex items-center gap-2 font-medium">
                 <span class="w-2 h-2 rounded-full" style="background:var(--accent-teal);"></span>
@@ -268,11 +275,14 @@
             <span id="splashClock" class="tabular-nums font-medium">00:00</span>
         </div>
 
-        <div class="flex flex-col items-center text-center space-y-4 my-auto">
-            <div class="w-20 h-20 rounded-3xl flex items-center justify-center font-bold text-4xl shadow-2xl animate-pulse-logo" style="background:var(--accent-blue);color:#ffffff;">
-                C
+        <div class="flex flex-col items-center text-center space-y-5 my-auto anim-fade">
+            <div class="relative flex items-center justify-center">
+                <div class="w-24 h-24 rounded-full border-2 border-transparent animate-spin" style="border-top-color:var(--accent-blue);border-right-color:rgba(59,130,246,0.28);"></div>
+                <div class="w-20 h-20 rounded-3xl flex items-center justify-center font-bold text-4xl shadow-2xl animate-pulse-logo absolute" style="background:var(--accent-blue);color:#ffffff;">
+                    C
+                </div>
             </div>
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 pt-1">
                 <h1 class="font-bold text-3xl tracking-tight">Chrono</h1>
                 <p class="text-xs rev-muted max-w-xs leading-relaxed">Clean fever, medicine &amp; hydration diary synced across parents &amp; ready for your pediatrician.</p>
             </div>
@@ -280,11 +290,11 @@
 
         <div class="w-full max-w-xs space-y-3 pb-4">
             <div class="w-full h-1.5 rounded-full overflow-hidden rev-sub">
-                <div id="splashProgressBar" class="h-full rounded-full transition-all duration-300" style="width:25%;background:var(--accent-blue);"></div>
+                <div id="splashProgressBar" class="h-full rounded-full transition-all duration-300" style="width:18%;background:var(--accent-blue);"></div>
             </div>
             <div class="flex justify-between items-center text-xs rev-muted">
                 <span id="splashStatusText">Loading diary...</span>
-                <span id="splashPercentText" class="tabular-nums">25%</span>
+                <span id="splashPercentText" class="tabular-nums font-semibold">18%</span>
             </div>
             <button type="button" onclick="dismissSplashScreen()" class="w-full py-3 rounded-full text-xs font-bold rev-pill-primary">
                 Open Diary →
@@ -513,7 +523,7 @@
             <div id="tab-chart" class="tab-content space-y-4">
                 <div>
                     <h2 class="text-xl font-bold tracking-tight">Temperature &amp; Growth</h2>
-                    <p class="text-xs rev-muted">Smooth fever curve, child growth &amp; vaccines</p>
+                    <p class="text-xs rev-muted">Smooth fever curve &amp; child growth range</p>
                 </div>
 
                 <!-- Smooth SVG Temperature Curve Card -->
@@ -592,29 +602,6 @@
                             Save Growth
                         </button>
                     </div>
-                </div>
-
-                <!-- Vaccines Checklist Card -->
-                <div class="rev-card rounded-2xl p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-bold">Vaccines &amp; Immunizations</h3>
-                            <p class="text-xs rev-muted">Tap any vaccine to mark completed</p>
-                        </div>
-                        <span id="vaccineProgressText" class="text-xs font-bold tabular-nums" style="color:var(--accent-blue-text);">0 / 0</span>
-                    </div>
-
-                    <div class="w-full h-2 rounded-full overflow-hidden rev-sub">
-                        <div id="vaccineProgressBar" class="h-full rounded-full transition-all duration-300" style="width:0%;background:var(--accent-teal);"></div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-1.5 text-xs font-bold">
-                        <button type="button" id="vacFilter-all" onclick="setVaccineFilter('all')" class="py-1.5 rounded-full chip-btn chip-selected">All</button>
-                        <button type="button" id="vacFilter-done" onclick="setVaccineFilter('done')" class="py-1.5 rounded-full chip-btn">Done</button>
-                        <button type="button" id="vacFilter-pending" onclick="setVaccineFilter('pending')" class="py-1.5 rounded-full chip-btn">Pending</button>
-                    </div>
-
-                    <div id="vaccineList" class="space-y-2 max-h-72 overflow-y-auto pr-0.5"></div>
                 </div>
             </div>
 
@@ -748,12 +735,26 @@
                     <p class="text-xs rev-muted">Theme, units, alarms &amp; optional clinical reference</p>
                 </div>
 
-                <!-- Theme Card -->
+                <!-- Color Theme Card -->
                 <div class="rev-card rounded-2xl p-4 space-y-3">
-                    <div class="text-xs font-bold uppercase tracking-wide rev-muted">Appearance</div>
+                    <div class="text-xs font-bold uppercase tracking-wide rev-muted">Colors</div>
                     <div class="grid grid-cols-2 gap-2 text-xs font-bold">
-                        <button type="button" id="themeBtn-dark" onclick="setTheme('dark')" class="py-2.5 px-3 rounded-xl chip-btn">Revolut Midnight</button>
-                        <button type="button" id="themeBtn-light" onclick="setTheme('light')" class="py-2.5 px-3 rounded-xl chip-btn">Clean White</button>
+                        <button type="button" id="themeBtn-dark" onclick="setTheme('dark')" class="py-2.5 px-3 rounded-xl chip-btn flex items-center justify-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full border shrink-0" style="background:#0f1115;border-color:#3b82f6;"></span>
+                            <span>Black</span>
+                        </button>
+                        <button type="button" id="themeBtn-light" onclick="setTheme('light')" class="py-2.5 px-3 rounded-xl chip-btn flex items-center justify-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full border shrink-0" style="background:#f4f5f7;border-color:#94a3b8;"></span>
+                            <span>White</span>
+                        </button>
+                        <button type="button" id="themeBtn-mint" onclick="setTheme('mint')" class="py-2.5 px-3 rounded-xl chip-btn flex items-center justify-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full border shrink-0" style="background:#06241f;border-color:#10b981;"></span>
+                            <span>Green</span>
+                        </button>
+                        <button type="button" id="themeBtn-warm" onclick="setTheme('warm')" class="py-2.5 px-3 rounded-xl chip-btn flex items-center justify-center gap-2">
+                            <span class="w-3.5 h-3.5 rounded-full border shrink-0" style="background:#1c1917;border-color:#f97316;"></span>
+                            <span>Warm</span>
+                        </button>
                     </div>
                 </div>
 
@@ -1038,10 +1039,11 @@
         let currentChildIdx = 0;
         let currentTheme = localStorage.getItem('ps_theme') || 'dark';
         let tempAlarmTarget = parseInt(localStorage.getItem('ps_alarm_target') || '0', 10);
-        let currentVacFilter = 'all';
         let tempUnit = localStorage.getItem('ps_temp_unit') || 'C';
         let weightUnit = localStorage.getItem('ps_weight_unit') || 'kg';
         let deferredPwaPrompt = null;
+        let pendingDeleteEntryIds = new Set();
+        let inFlightEntrySyncCount = 0;
 
         // UI State (Revolut Navigation, Smooth Transitions & Pickers)
         let activeTab = 'home';
@@ -1146,30 +1148,19 @@
             return m ? parseFloat(m[1]) : 0;
         }
 
-        function getDefaultVaccines() {
-            return [
-                { id: "v_hepb_1", name: "Hepatitis B (1st dose)", age: "Within 24 hours", done: true, date: "At birth" },
-                { id: "v_bcg", name: "BCG (Tuberculosis)", age: "3–7 days", done: true, date: "Newborn" },
-                { id: "v_hepb_2", name: "Hepatitis B (2nd dose)", age: "1–2 months", done: true, date: "1 mo" },
-                { id: "v_pneumo_1", name: "Pneumococcal PCV13 (1st dose)", age: "2 months", done: true, date: "2 mo" },
-                { id: "v_dpt_1", name: "DTaP / Pentaxim (1st dose)", age: "2–3 months", done: true, date: "3 mo" },
-                { id: "v_polio_1", name: "Polio IPV (1st dose)", age: "2–3 months", done: true, date: "3 mo" },
-                { id: "v_dpt_2", name: "DTaP / Pentaxim (2nd dose)", age: "4.5 months", done: false, date: "" },
-                { id: "v_pneumo_2", name: "Pneumococcal PCV13 (2nd dose)", age: "4.5 months", done: false, date: "" },
-                { id: "v_dpt_3", name: "DTaP / Pentaxim (3rd dose)", age: "6 months", done: false, date: "" },
-                { id: "v_hepb_3", name: "Hepatitis B (3rd dose)", age: "6 months", done: false, date: "" },
-                { id: "v_mmr_1", name: "MMR (Measles, Mumps, Rubella)", age: "12 months", done: false, date: "" },
-                { id: "v_pneumo_rev", name: "Pneumococcal PCV13 (Booster)", age: "15 months", done: false, date: "" },
-                { id: "v_dpt_rev1", name: "DTaP (1st Booster)", age: "18 months", done: false, date: "" },
-                { id: "v_mmr_rev", name: "MMR & Tdap (School Booster)", age: "4–6 years", done: false, date: "" }
-            ];
+        function isCloudSignedIn() {
+            return Boolean(authToken && authToken !== 'guest_token' && !String(authToken).startsWith('local_token_'));
+        }
+
+        function canSyncChild(child) {
+            return Boolean(child && child.id && !child.localOnly && !String(child.id).startsWith('local_c_') && isCloudSignedIn());
         }
 
         function ensureChildFields(c) {
             if (!c) return c;
+            if (String(c.id || '').startsWith('local_c_')) c.localOnly = true;
             if (!Array.isArray(c.points48h)) c.points48h = [];
             if (!Array.isArray(c.reminders)) c.reminders = [];
-            if (!Array.isArray(c.vaccines) || c.vaccines.length === 0) c.vaccines = getDefaultVaccines();
             if (!Array.isArray(c.archivedEpisodes)) c.archivedEpisodes = [];
             if (!Array.isArray(c.urineLogs)) c.urineLogs = [];
             if (!Array.isArray(c.savedMeds)) c.savedMeds = [];
@@ -1293,41 +1284,67 @@
         }
 
         // ==========================================
-        // SPLASH & ONBOARDING FLOW
+        // LOADING SCREEN & ONBOARDING FLOW
         // ==========================================
+        let _splashDismissed = false;
+        let _splashTimer = null;
+        let _initialSyncTriggered = false;
+
         function initSplashScreen() {
+            _splashDismissed = false;
+            const splash = document.getElementById('splashScreen');
+            if (!splash) {
+                checkOnboardingFlow();
+                return;
+            }
+            splash.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
             const pBar = document.getElementById('splashProgressBar');
             const pText = document.getElementById('splashPercentText');
             const sText = document.getElementById('splashStatusText');
-            let progress = 10;
-            const interval = setInterval(() => {
-                progress += Math.floor(Math.random() * 25) + 20;
+
+            if (isCloudSignedIn()) {
+                _initialSyncTriggered = true;
+                syncWithBackend();
+            }
+
+            let progress = 18;
+            if (pBar) pBar.style.width = '18%';
+            if (pText) pText.innerText = '18%';
+            if (sText) sText.innerText = isCloudSignedIn() ? 'Syncing family diary...' : 'Loading diary...';
+
+            clearInterval(_splashTimer);
+            _splashTimer = setInterval(() => {
+                progress += Math.floor(Math.random() * 14) + 12;
                 if (progress >= 100) {
                     progress = 100;
-                    clearInterval(interval);
+                    clearInterval(_splashTimer);
                     if (pBar) pBar.style.width = '100%';
                     if (pText) pText.innerText = '100%';
                     if (sText) sText.innerText = 'Ready!';
-                    setTimeout(dismissSplashScreen, 300);
+                    setTimeout(dismissSplashScreen, 260);
                 } else {
                     if (pBar) pBar.style.width = progress + '%';
                     if (pText) pText.innerText = progress + '%';
-                    if (progress > 50 && sText) sText.innerText = 'Loading family diary...';
+                    if (progress >= 60 && sText) sText.innerText = 'Preparing smooth charts...';
                 }
-            }, 120);
+            }, 95);
         }
 
         function dismissSplashScreen() {
+            if (_splashDismissed) return;
+            _splashDismissed = true;
+            clearInterval(_splashTimer);
             const splash = document.getElementById('splashScreen');
+            checkOnboardingFlow(_initialSyncTriggered);
+            _initialSyncTriggered = false;
             if (!splash) return;
             splash.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => {
                 splash.classList.add('hidden');
-                checkOnboardingFlow();
-            }, 500);
+            }, 460);
         }
 
-        function checkOnboardingFlow() {
+        function checkOnboardingFlow(skipSync = false) {
             if (!currentUser) {
                 document.getElementById('onboardingAuthScreen').classList.remove('hidden');
                 return;
@@ -1340,7 +1357,7 @@
             document.getElementById('onboardingChildScreen').classList.add('hidden');
             renderApp();
             runDedicatedCalculation();
-            syncWithBackend();
+            if (!skipSync) syncWithBackend();
         }
 
         function setObAuthMode(mode) {
@@ -1361,6 +1378,9 @@
             const username = document.getElementById(isLogin ? 'obLoginUsername' : 'obRegUsername').value.trim();
             const password = document.getElementById(isLogin ? 'obLoginPassword' : 'obRegPassword').value.trim();
             const name = isLogin ? username : document.getElementById('obRegName').value.trim();
+            const submitBtn = e.target ? e.target.querySelector('button[type="submit"]') : null;
+            const origLabel = submitBtn ? submitBtn.innerText : '';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Please wait...'; }
 
             try {
                 const endpoint = isLogin ? '/api/login' : '/api/register';
@@ -1379,7 +1399,7 @@
                     localStorage.setItem('ps_user', JSON.stringify(currentUser));
                     saveLocalState();
                     document.getElementById('onboardingAuthScreen').classList.add('hidden');
-                    checkOnboardingFlow();
+                    checkOnboardingFlow(true);
                     return;
                 } else {
                     alert(json.message || 'Sign-in error');
@@ -1391,7 +1411,9 @@
                 localStorage.setItem('ps_user', JSON.stringify(currentUser));
                 saveLocalState();
                 document.getElementById('onboardingAuthScreen').classList.add('hidden');
-                checkOnboardingFlow();
+                checkOnboardingFlow(true);
+            } finally {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = origLabel; }
             }
         }
 
@@ -1413,9 +1435,13 @@
             const episode = document.getElementById('initChildEpisode').value.trim() || 'Observation';
             const allergies = (document.getElementById('initChildAllergies').value || 'None').trim();
             const doctorPhone = (document.getElementById('initChildDoctor').value || '').trim();
+            const submitBtn = e.target ? e.target.querySelector('button[type="submit"]') : null;
+            const origLabel = submitBtn ? submitBtn.innerText : '';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Saving...'; }
 
             const newChild = ensureChildFields({
-                id: 'c_' + Date.now(),
+                id: 'local_c_' + Date.now(),
+                localOnly: true,
                 familyCode: 'FAM-' + Math.floor(1000 + Math.random() * 9000),
                 name, age, weight,
                 height: Math.round(75 + age * 6.5),
@@ -1424,7 +1450,7 @@
                 familyMembers: [{ name: currentUser ? currentUser.name : 'Parent', role: 'Profile creator' }]
             });
 
-            if (authToken && authToken !== 'guest_token') {
+            if (isCloudSignedIn()) {
                 try {
                     const res = await fetch('/api/children', {
                         method: 'POST',
@@ -1435,6 +1461,7 @@
                         const json = await res.json();
                         if (json.success && json.data) {
                             newChild.id = json.data.id;
+                            newChild.localOnly = false;
                             if (json.data.familyCode) newChild.familyCode = json.data.familyCode;
                             if (Array.isArray(json.data.familyMembers)) newChild.familyMembers = json.data.familyMembers;
                         }
@@ -1442,6 +1469,7 @@
                 } catch (err) {}
             }
 
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = origLabel; }
             children.push(newChild);
             currentChildIdx = 0;
             saveLocalState();
@@ -1471,7 +1499,7 @@
             if (!code) return;
 
             try {
-                if (authToken && authToken !== 'guest_token') {
+                if (isCloudSignedIn()) {
                     const res = await fetch('/api/family/join', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -1503,27 +1531,83 @@
             showQuickToast(`Code ${code} requires sign-in for cloud sync`);
         }
 
+        async function postEntryToServer(child, entry) {
+            if (!canSyncChild(child) || !entry) return false;
+            inFlightEntrySyncCount++;
+            try {
+                const res = await fetch(`/api/children/${child.id}/entries`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({
+                        temp: entry.temp,
+                        drink: entry.drink,
+                        med: entry.med,
+                        note: entry.note,
+                        createdAtMs: entry.createdAtMs
+                    })
+                });
+                if (res.ok) {
+                    const json = await res.json().catch(() => null);
+                    entry._pendingSync = false;
+                    if (json && json.success && json.data && json.data.id) {
+                        entry.id = json.data.id;
+                    }
+                    saveLocalState();
+                    return true;
+                }
+            } catch (e) {} finally {
+                inFlightEntrySyncCount = Math.max(0, inFlightEntrySyncCount - 1);
+            }
+            return false;
+        }
+
         async function syncWithBackend() {
-            if (!authToken || authToken === 'guest_token') return;
+            if (!isCloudSignedIn() || inFlightEntrySyncCount > 0) return;
             try {
                 const res = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
-                if (res.ok) {
-                    const json = await res.json();
-                    if (json.success && json.data && Array.isArray(json.data.children)) {
-                        // Preserve local savedMeds if backend record doesn't have them yet
-                        const localSavedMap = {};
-                        children.forEach(lc => { if (lc && lc.id && Array.isArray(lc.savedMeds) && lc.savedMeds.length) localSavedMap[lc.id] = lc.savedMeds; });
-                        children = json.data.children.map(c => {
-                            const ec = ensureChildFields(c);
-                            if ((!ec.savedMeds || ec.savedMeds.length === 0) && localSavedMap[ec.id]) {
-                                ec.savedMeds = localSavedMap[ec.id];
-                            }
-                            return ec;
-                        });
-                        saveLocalState();
-                        renderApp();
+                if (!res.ok) return;
+                const json = await res.json();
+                if (!json.success || !json.data || !Array.isArray(json.data.children)) return;
+                if (inFlightEntrySyncCount > 0) return;
+
+                const localMap = {};
+                const localOnlyList = [];
+                children.forEach(lc => {
+                    if (!lc || !lc.id) return;
+                    if (lc.localOnly || String(lc.id).startsWith('local_c_')) {
+                        localOnlyList.push(ensureChildFields(lc));
+                    } else {
+                        localMap[lc.id] = lc;
                     }
-                }
+                });
+
+                const toRetry = [];
+                const merged = json.data.children.map(c => {
+                    const ec = ensureChildFields(c);
+                    ec.localOnly = false;
+                    const lc = localMap[ec.id];
+                    if (lc) {
+                        if ((!ec.savedMeds || ec.savedMeds.length === 0) && Array.isArray(lc.savedMeds) && lc.savedMeds.length) {
+                            ec.savedMeds = lc.savedMeds;
+                        }
+                        if (pendingDeleteEntryIds.size > 0) {
+                            ec.points48h = ec.points48h.filter(p => !pendingDeleteEntryIds.has(p.id));
+                        }
+                        const remoteIds = new Set(ec.points48h.map(p => p.id));
+                        const remoteTs = new Set(ec.points48h.map(p => p.createdAtMs).filter(Boolean));
+                        const pendingPts = (lc.points48h || []).filter(p => p._pendingSync && !remoteIds.has(p.id) && (!p.createdAtMs || !remoteTs.has(p.createdAtMs)));
+                        if (pendingPts.length) {
+                            ec.points48h = [...ec.points48h, ...pendingPts].sort((a, b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+                            pendingPts.forEach(pt => toRetry.push({ child: ec, entry: pt }));
+                        }
+                    }
+                    return ec;
+                });
+
+                children = [...merged, ...localOnlyList];
+                saveLocalState();
+                renderApp();
+                toRetry.forEach(({ child, entry }) => postEntryToServer(child, entry));
             } catch (e) {}
         }
         setInterval(syncWithBackend, 12000);
@@ -1928,8 +2012,9 @@
                 else p.hours_ago = Math.min(48, (p.hours_ago || 0) + 1);
             });
 
+            const canSync = canSyncChild(child);
             const newPoint = {
-                id: 'p_' + nowMs,
+                id: (canSync ? 'p_' : 'local_p_') + nowMs,
                 temp: +Number(temp).toFixed(1),
                 drink: drink || null,
                 med: med || null,
@@ -1937,18 +2022,16 @@
                 author,
                 hours_ago: 0,
                 createdAtMs: nowMs,
-                timestamp: 'Just now'
+                timestamp: 'Just now',
+                _pendingSync: canSync
             };
 
             child.points48h.push(newPoint);
+            selectedChartIdx = null;
             saveLocalState();
 
-            if (authToken && authToken !== 'guest_token' && !child.id.startsWith('c_')) {
-                fetch(`/api/children/${child.id}/entries`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ temp: newPoint.temp, drink: newPoint.drink, med: newPoint.med, note: newPoint.note, createdAtMs: nowMs })
-                }).catch(() => {});
+            if (canSync) {
+                postEntryToServer(child, newPoint);
             }
         }
 
@@ -2044,18 +2127,22 @@
             if (!child) return;
             const entry = child.points48h[idx];
             child.points48h.splice(idx, 1);
+            selectedChartIdx = null;
             saveLocalState();
-            if (authToken && authToken !== 'guest_token' && entry && entry.id && !entry.id.startsWith('p_')) {
+            if (canSyncChild(child) && entry && entry.id && !String(entry.id).startsWith('local_p_')) {
+                pendingDeleteEntryIds.add(entry.id);
                 fetch(`/api/children/${child.id}/entries/${entry.id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${authToken}` }
-                }).catch(() => {});
+                }).catch(() => {}).finally(() => {
+                    pendingDeleteEntryIds.delete(entry.id);
+                });
             }
             renderApp();
         }
 
         function syncChildMeta(child) {
-            if (!child || !authToken || authToken === 'guest_token' || child.id.startsWith('c_')) return;
+            if (!canSyncChild(child)) return;
             fetch(`/api/children/${child.id}/meta`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -2066,7 +2153,6 @@
                     episode: child.episode,
                     lastUrineMs: child.lastUrineMs,
                     urineLogs: child.urineLogs,
-                    vaccines: child.vaccines,
                     archivedEpisodes: child.archivedEpisodes,
                     savedMeds: child.savedMeds
                 })
@@ -2281,7 +2367,6 @@
 
             renderReminders(child);
             renderArchivedEpisodes(child);
-            renderVaccines(child);
             drawSmoothChart();
             syncGrowthInputsFromChild();
             updateAuthBadge();
@@ -2428,7 +2513,7 @@
         }
 
         // ==========================================
-        // GROWTH METRICS & VACCINES
+        // GROWTH METRICS
         // ==========================================
         function syncGrowthInputsFromChild() {
             const child = getActiveChild();
@@ -2498,62 +2583,6 @@
             renderApp();
             runDedicatedCalculation();
             showQuickToast(`Updated ${child.name}: ${formatWeight(child.weight)}, ${child.height} cm`);
-        }
-
-        function setVaccineFilter(filter) {
-            currentVacFilter = filter;
-            ['all', 'done', 'pending'].forEach(f => {
-                const btn = document.getElementById(`vacFilter-${f}`);
-                if (btn) btn.className = `py-1.5 rounded-full chip-btn ${f === filter ? 'chip-selected' : ''}`;
-            });
-            const child = getActiveChild();
-            if (child) renderVaccines(child);
-        }
-
-        function renderVaccines(child) {
-            const listEl = document.getElementById('vaccineList');
-            const progText = document.getElementById('vaccineProgressText');
-            const progBar = document.getElementById('vaccineProgressBar');
-            if (!listEl || !child) return;
-            ensureChildFields(child);
-
-            const vacs = child.vaccines || [];
-            const doneCount = vacs.filter(v => v.done).length;
-            const pct = vacs.length ? Math.round((doneCount / vacs.length) * 100) : 0;
-
-            if (progText) progText.innerText = `${doneCount} / ${vacs.length} (${pct}%)`;
-            if (progBar) progBar.style.width = `${pct}%`;
-
-            const filtered = vacs.filter(v => {
-                if (currentVacFilter === 'done') return v.done;
-                if (currentVacFilter === 'pending') return !v.done;
-                return true;
-            });
-
-            listEl.innerHTML = filtered.map(v => `
-                <div onclick="toggleVaccine('${v.id}')" class="rev-sub rounded-xl p-3 flex items-center justify-between cursor-pointer text-xs" style="${v.done ? 'border:1px solid var(--accent-teal);' : 'border:1px solid transparent;'}">
-                    <div class="flex items-center gap-2.5 min-w-0 pr-2">
-                        <span class="w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold shrink-0" style="${v.done ? 'background:var(--accent-teal);color:#0f172a;' : 'background:var(--bg-card);'}">${v.done ? '✓' : ''}</span>
-                        <div class="min-w-0">
-                            <div class="font-bold truncate">${escHtml(v.name)}</div>
-                            <div class="rev-muted">${escHtml(v.age)}${v.done && v.date ? ' · ' + escHtml(v.date) : ''}</div>
-                        </div>
-                    </div>
-                    <span class="font-bold shrink-0" style="color:${v.done ? 'var(--accent-teal)' : 'var(--accent-warn)'};">${v.done ? 'Done' : 'Pending'}</span>
-                </div>
-            `).join('');
-        }
-
-        function toggleVaccine(vacId) {
-            const child = getActiveChild();
-            if (!child || !child.vaccines) return;
-            const v = child.vaccines.find(x => x.id === vacId);
-            if (!v) return;
-            v.done = !v.done;
-            v.date = v.done ? new Date().toISOString().slice(0, 10) : '';
-            saveLocalState();
-            syncChildMeta(child);
-            renderVaccines(child);
         }
 
         // ==========================================
@@ -2696,7 +2725,7 @@
             saveLocalState();
             renderReminders(child);
 
-            if (authToken && authToken !== 'guest_token' && !child.id.startsWith('c_')) {
+            if (canSyncChild(child)) {
                 fetch(`/api/children/${child.id}/reminders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -2719,7 +2748,7 @@
             rem.done = !rem.done;
             saveLocalState();
             renderReminders(child);
-            if (authToken && authToken !== 'guest_token' && !child.id.startsWith('c_')) {
+            if (canSyncChild(child)) {
                 fetch(`/api/children/${child.id}/reminders/${remId}/toggle`, {
                     method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}` }
                 }).catch(() => {});
@@ -2732,7 +2761,7 @@
             child.reminders = child.reminders.filter(r => r.id !== remId);
             saveLocalState();
             renderReminders(child);
-            if (authToken && authToken !== 'guest_token' && !child.id.startsWith('c_')) {
+            if (canSyncChild(child)) {
                 fetch(`/api/children/${child.id}/reminders/${remId}`, {
                     method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` }
                 }).catch(() => {});
@@ -2848,9 +2877,13 @@
             const episode = document.getElementById('newChildEpisode').value.trim() || 'Observation';
             const allergies = (document.getElementById('newChildAllergies').value || 'None').trim();
             const doctorPhone = (document.getElementById('newChildDoctor').value || '').trim();
+            const submitBtn = e.target ? e.target.querySelector('button[type="submit"]') : null;
+            const origLabel = submitBtn ? submitBtn.innerText : '';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Saving...'; }
 
             const newChild = ensureChildFields({
-                id: 'c_' + Date.now(),
+                id: 'local_c_' + Date.now(),
+                localOnly: true,
                 familyCode: 'FAM-' + Math.floor(1000 + Math.random() * 9000),
                 name, age, weight,
                 height: Math.round(75 + age * 6.5),
@@ -2859,7 +2892,7 @@
                 familyMembers: [{ name: currentUser ? currentUser.name : 'Parent', role: 'Profile creator' }]
             });
 
-            if (authToken && authToken !== 'guest_token') {
+            if (isCloudSignedIn()) {
                 try {
                     const res = await fetch('/api/children', {
                         method: 'POST',
@@ -2870,6 +2903,7 @@
                         const json = await res.json();
                         if (json.success && json.data) {
                             newChild.id = json.data.id;
+                            newChild.localOnly = false;
                             if (json.data.familyCode) newChild.familyCode = json.data.familyCode;
                             if (Array.isArray(json.data.familyMembers)) newChild.familyMembers = json.data.familyMembers;
                         }
@@ -2877,6 +2911,7 @@
                 } catch (err) {}
             }
 
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = origLabel; }
             children.push(newChild);
             currentChildIdx = children.length - 1;
             saveLocalState();
@@ -2890,10 +2925,11 @@
             const c = children[idx];
             if (!confirm(`Delete profile "${c.name}" and its entries?`)) return;
             const childId = c.id;
+            const shouldSyncDelete = canSyncChild(c);
             children.splice(idx, 1);
             if (currentChildIdx >= children.length) currentChildIdx = Math.max(0, children.length - 1);
             saveLocalState();
-            if (authToken && authToken !== 'guest_token' && childId && !childId.startsWith('c_')) {
+            if (shouldSyncDelete) {
                 fetch(`/api/children/${childId}`, {
                     method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` }
                 }).catch(() => {});
@@ -2945,7 +2981,7 @@
             const valid = ['dark', 'light', 'mint', 'warm'].includes(themeName) ? themeName : 'dark';
             currentTheme = valid;
             document.body.className = `theme-${valid} antialiased h-full m-0 p-0`;
-            ['appShell', 'onboardingAuthScreen', 'onboardingChildScreen'].forEach(id => {
+            ['splashScreen', 'appShell', 'onboardingAuthScreen', 'onboardingChildScreen'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.classList.remove('theme-dark', 'theme-light', 'theme-mint', 'theme-warm');
@@ -2953,16 +2989,17 @@
             });
 
             const meta = document.getElementById('metaThemeColor');
-            if (meta) meta.setAttribute('content', valid === 'light' ? '#f4f5f7' : '#0f1115');
+            const metaColors = { dark: '#0f1115', light: '#f4f5f7', mint: '#06241f', warm: '#1c1917' };
+            if (meta) meta.setAttribute('content', metaColors[valid] || '#0f1115');
 
-            ['dark', 'light'].forEach(m => {
+            ['dark', 'light', 'mint', 'warm'].forEach(m => {
                 const b = document.getElementById(`themeBtn-${m}`);
-                if (b) b.className = `py-2.5 px-3 rounded-xl chip-btn ${valid === m ? 'chip-selected' : ''}`;
+                if (b) b.className = `py-2.5 px-3 rounded-xl chip-btn flex items-center justify-center gap-2 ${valid === m ? 'chip-selected' : ''}`;
             });
 
             if (persist) {
                 localStorage.setItem('ps_theme', valid);
-                if (authToken && authToken !== 'guest_token') {
+                if (isCloudSignedIn()) {
                     fetch('/api/user/theme', {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -3254,7 +3291,7 @@
 
         setTheme(currentTheme, false);
         updateUnitUI();
-        checkOnboardingFlow();
+        initSplashScreen();
     </script>
 </body>
 </html>
